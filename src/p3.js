@@ -17,11 +17,15 @@ let toast=null,matchDone=false;
 /* set by the online build; null offline */
 let onLockIn=null,netBlockStart=null;
 const MODES=[
-  {id:'duel',    title:'SINGLEPLAYER',sub:'QUICK DUEL VS BOT',hint:'ONE HUMAN · PICK A DIFFICULTY'},
-  {id:'campaign',title:'CAMPAIGN',    sub:'16 STAGES, RISING DIFFICULTY',hint:'BEAT EVERY ARENA TO UNLOCK TANKS'},
-  {id:'coop',    title:'CO-OP 1V1',   sub:'TWO PLAYERS, ONE KEYBOARD',hint:'WASD VS ARROW KEYS'},
-  {id:'online',  title:'ONLINE',      sub:'PLAY OVER THE INTERNET',hint:'NEEDS THE SELF-HOSTED BUILD'},
-  {id:'profiles',title:'PROFILES',    sub:'NAMES, COLOURS, STATS, UNLOCKS',hint:'SAVED IN THIS BROWSER'},
+  {id:'duel',    title:'QUICK DUEL', sub:'YOU VS A BOT',         icon:'duel', col:'#ef3e4a',two:false},
+  {id:'coop',    title:'VERSUS',     sub:'TWO PLAYERS, 1 SCREEN',icon:'vs',   col:'#35a44a',two:true},
+  {id:'campaign',title:'CAMPAIGN',   sub:'16 STAGES TO CLEAR',   icon:'flag', col:'#ffd23f',two:false},
+  {id:'survival',title:'SURVIVAL',   sub:'ENDLESS WAVES OF BOTS',icon:'wave', col:'#ff8c42',two:true},
+  {id:'ball',    title:'TANK BALL',  sub:'SCORE 3 GOALS',        icon:'ball', col:'#4cc9f0',two:true},
+  {id:'zone',    title:'ZONE CONTROL',sub:'HOLD THE RING TO WIN',icon:'zone', col:'#a06cd5',two:true},
+  {id:'boss',    title:'BOSS RUSH',  sub:'TAKE DOWN OMEGA',      icon:'boss', col:'#b5564a',two:true},
+  {id:'online',  title:'ONLINE',     sub:'PLAY OVER THE INTERNET',icon:'net', col:'#2ec4b6',two:false},
+  {id:'profiles',title:'PROFILES',   sub:'NAMES · COLOURS · STATS',icon:'card',col:'#8a8672',two:false},
 ];
 const bg=document.createElement('canvas');bg.width=W;bg.height=H;const bgx=bg.getContext('2d');
 

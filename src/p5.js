@@ -180,10 +180,20 @@ function handleMenuTaps(){
   if(!curTap)return;
   if(state==='title'||state==='game'||state==='round'){pressQ.add('Space');curTap=null;return}
   if(state==='mode'){
-    const w=560,x=(W-w)/2;
+    // must match drawMode's grid exactly
+    const cw=280,ch=124,gx=14,gy=13,x0=(W-3*cw-2*gx)/2,y0=78;
     for(let i=0;i<MODES.length;i++){
-      if(tapIn(x-10,104+i*74-6,w+20,74)){
+      const x=x0+(i%3)*(cw+gx),y=y0+((i/3)|0)*(ch+gy);
+      if(tapIn(x,y,cw,ch)){
         if(menuIdx===i)pressQ.add('Space');else{menuIdx=i;sTick()}
+        curTap=null;return;
+      }
+    }
+  }else if(state==='players'){
+    for(let i=0;i<2;i++){
+      const cw=300,ch=190,x=W/2-cw-20+i*(cw+40),y=150;
+      if(tapIn(x,y,cw,ch)){
+        if(subIdx===i)pressQ.add('Space');else{subIdx=i;sTick()}
         curTap=null;return;
       }
     }
