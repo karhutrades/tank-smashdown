@@ -1,13 +1,14 @@
 <title>Tank Smashdown</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <style>
-  html,body{height:100%}
+  html,body{height:100%;height:100dvh}
   body{margin:0;background:#0f1220;display:flex;align-items:center;justify-content:center;overflow:hidden;
     padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-  .wrap{width:min(100vw,160vh * .96);padding:12px;box-sizing:border-box}
+  .wrap{width:min(100vw,152vh);padding:10px;box-sizing:border-box}
+  @supports (height:100dvh){.wrap{width:min(100vw,152dvh)}}
   canvas{display:block;width:100%;height:auto;border-radius:14px;box-shadow:0 18px 70px rgba(0,0,0,.6);
-    touch-action:none;-webkit-user-select:none;user-select:none}
-  @media (max-width:700px){.wrap{padding:2px}canvas{border-radius:6px}}
+    touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  @media (max-width:900px){.wrap{padding:0}canvas{border-radius:0;box-shadow:none}}
   .wrap:fullscreen{display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:0;background:#0f1220}
   .wrap:fullscreen canvas{width:min(100vw,160vh);height:auto;border-radius:0;box-shadow:none}
 </style>
@@ -306,14 +307,17 @@ function toggleFullscreen(){
   try{
     const el=(document.querySelector&&document.querySelector('.wrap'))||cv;
     if(document.fullscreenElement)document.exitFullscreen();
-    else if(el.requestFullscreen)el.requestFullscreen();
+    else if(el.requestFullscreen){
+      el.requestFullscreen();
+      try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})}catch(e){}
+    }
   }catch(e){}
 }
 if(cv.addEventListener)cv.addEventListener('dblclick',toggleFullscreen);
 /* ---------------- touch: pop-up joystick + fire button ----------------
    The stick appears wherever the thumb lands and vanishes on release.
    In menus a tap = confirm and a flick = move the cursor. */
-const TOUCH={on:false,jid:null,ax:0,ay:0,dx:0,dy:0,fid:null,fire:false,t0:0,sx:0,sy:0};
+const TOUCH={on:false,jid:null,ax:0,ay:0,dx:0,dy:0,fid:null,fire:false,t0:0,sx:0,sy:0,taps:[],j2id:null,ax2:0,ay2:0,dx2:0,dy2:0};
 function touchXY(t){const r=cv.getBoundingClientRect();return{x:(t.clientX-r.left)/r.width*W,y:(t.clientY-r.top)/r.height*H}}
 const FIRE_BTN={x:W-78,y:H-160,r:46};
 const FS_BTN={x:W-30,y:30,r:20};
@@ -327,7 +331,21 @@ cv.addEventListener('touchstart',e=>{
     const p=touchXY(t);
     if(inC(p,FS_BTN)){toggleFullscreen();continue}
     if(inC(p,BACK_BTN)&&menuish()){pressQ.add('Escape');continue}
-    if(!menuish()&&inC(p,FIRE_BTN)&&TOUCH.fid===null){TOUCH.fid=t.identifier;TOUCH.fire=true;continue}
+    if(!menuish()){
+      if(mode==='coop'){
+        // pass-the-phone co-op: each half of the screen is one player's stick,
+        // and guns auto-fire while the turret is locked on
+        if(p.x<W/2&&TOUCH.jid===null){TOUCH.jid=t.identifier;TOUCH.ax=p.x;TOUCH.ay=p.y;TOUCH.dx=0;TOUCH.dy=0}
+        else if(p.x>=W/2&&TOUCH.j2id===null){TOUCH.j2id=t.identifier;TOUCH.ax2=p.x;TOUCH.ay2=p.y;TOUCH.dx2=0;TOUCH.dy2=0}
+        continue;
+      }
+      // right zone fires, left zone steers - two thumbs, no hunting for buttons
+      if(p.x>W*.62&&TOUCH.fid===null){TOUCH.fid=t.identifier;TOUCH.fire=true;continue}
+      if(p.x<=W*.62&&TOUCH.jid===null){
+        TOUCH.jid=t.identifier;TOUCH.ax=p.x;TOUCH.ay=p.y;TOUCH.dx=0;TOUCH.dy=0;
+      }
+      continue;
+    }
     if(TOUCH.jid===null){
       TOUCH.jid=t.identifier;TOUCH.ax=p.x;TOUCH.ay=p.y;TOUCH.dx=0;TOUCH.dy=0;
       TOUCH.t0=performance.now();TOUCH.sx=p.x;TOUCH.sy=p.y;
@@ -337,22 +355,29 @@ cv.addEventListener('touchstart',e=>{
 cv.addEventListener('touchmove',e=>{
   e.preventDefault();
   for(const t of e.changedTouches){
-    if(t.identifier!==TOUCH.jid)continue;
     const p=touchXY(t);
-    let dx=p.x-TOUCH.ax,dy=p.y-TOUCH.ay;
-    const d=Math.hypot(dx,dy);
-    if(d>52){dx=dx/d*52;dy=dy/d*52;TOUCH.ax=p.x-dx;TOUCH.ay=p.y-dy} // the base follows a long drag
-    TOUCH.dx=dx;TOUCH.dy=dy;
+    if(t.identifier===TOUCH.jid){
+      let dx=p.x-TOUCH.ax,dy=p.y-TOUCH.ay;
+      const d=Math.hypot(dx,dy);
+      if(d>52){dx=dx/d*52;dy=dy/d*52;TOUCH.ax=p.x-dx;TOUCH.ay=p.y-dy}
+      TOUCH.dx=dx;TOUCH.dy=dy;
+    }else if(t.identifier===TOUCH.j2id){
+      let dx=p.x-TOUCH.ax2,dy=p.y-TOUCH.ay2;
+      const d=Math.hypot(dx,dy);
+      if(d>52){dx=dx/d*52;dy=dy/d*52;TOUCH.ax2=p.x-dx;TOUCH.ay2=p.y-dy}
+      TOUCH.dx2=dx;TOUCH.dy2=dy;
+    }
   }
 },{passive:false});
 const touchEnd=e=>{
   e.preventDefault();
   for(const t of e.changedTouches){
     if(t.identifier===TOUCH.fid){TOUCH.fid=null;TOUCH.fire=false}
+    if(t.identifier===TOUCH.j2id){TOUCH.j2id=null;TOUCH.dx2=0;TOUCH.dy2=0}
     if(t.identifier===TOUCH.jid){
       if(menuish()){
         const p=touchXY(t),mx=p.x-TOUCH.sx,my=p.y-TOUCH.sy,md=Math.hypot(mx,my);
-        if(performance.now()-TOUCH.t0<450&&md<16)pressQ.add('Space');
+        if(performance.now()-TOUCH.t0<500&&md<18)TOUCH.taps.push({x:p.x,y:p.y});
         else if(md>=26)pressQ.add(Math.abs(mx)>Math.abs(my)?(mx>0?'KeyD':'KeyA'):(my>0?'KeyS':'KeyW'));
       }
       TOUCH.jid=null;TOUCH.dx=0;TOUCH.dy=0;
@@ -1305,6 +1330,16 @@ function aiInput(t){
   return inp;
 }
 function humanInput(t){
+  // phone co-op: your half of the screen is your stick, guns fire on lock
+  if(TOUCH.on&&mode==='coop'&&(TOUCH.jid!==null||TOUCH.j2id!==null)){
+    const sx=t.team===0?TOUCH.dx:TOUCH.dx2,sy=t.team===0?TOUCH.dy:TOUCH.dy2;
+    const jl=Math.hypot(sx,sy);
+    const k0=KEYMAP[t.team];
+    if(jl>9)return{dx:sx/jl,dy:sy/jl,fire:t.lock>18||!!keys[k0.fire]};
+    return{dx:(keys[k0.right]?1:0)-(keys[k0.left]?1:0),
+           dy:(keys[k0.down]?1:0)-(keys[k0.up]?1:0),
+           fire:t.lock>18||!!keys[k0.fire]};
+  }
   // touch joystick drives the local tank (P1 offline, your tank online)
   if(TOUCH.on&&(t.team===0||t.netLocal)){
     const jl=Math.hypot(TOUCH.dx,TOUCH.dy);
@@ -1818,8 +1853,71 @@ function currentTune(){
   const m=MAPS[mapIndex];
   return m?m.world:'menu';
 }
+let curTap=null;
+function tapIn(x,y,w,h){return curTap&&curTap.x>=x&&curTap.x<=x+w&&curTap.y>=y&&curTap.y<=y+h}
+function handleMenuTaps(){
+  if(!curTap)return;
+  if(state==='title'||state==='game'||state==='round'){pressQ.add('Space');curTap=null;return}
+  if(state==='mode'){
+    const w=560,x=(W-w)/2;
+    for(let i=0;i<MODES.length;i++){
+      if(tapIn(x-10,104+i*74-6,w+20,74)){
+        if(menuIdx===i)pressQ.add('Space');else{menuIdx=i;sTick()}
+        curTap=null;return;
+      }
+    }
+  }else if(state==='difficulty'){
+    const cw=250,gap=20,x0=(W-3*cw-2*gap)/2;
+    for(let i=0;i<3;i++){
+      if(tapIn(x0+i*(cw+gap),150,cw,220)){
+        if(subIdx===i)pressQ.add('Space');else{subIdx=i;sTick()}
+        curTap=null;return;
+      }
+    }
+  }else if(state==='campmenu'){
+    const cols=8,cw=104,ch=74,gap=10,x0=(W-cols*cw-(cols-1)*gap)/2;
+    for(let i=0;i<MAPS.length;i++){
+      const tx=x0+(i%cols)*(cw+gap),ty=132+((i/cols)|0)*(ch+gap);
+      if(tapIn(tx,ty,cw,ch)){
+        const maxStage=Math.min(prof(0).stats.campaign|0,MAPS.length-1);
+        if(i>maxStage){toast={txt:'CLEAR THE EARLIER STAGES FIRST',life:150};sBack()}
+        else if(subIdx===i)pressQ.add('Space');
+        else{subIdx=i;sTick()}
+        curTap=null;return;
+      }
+    }
+    if(curTap.y>420){pressQ.add('Space');curTap=null;return}
+  }else if(state==='select'){
+    const cw=110,ch=104,gapx=7,rowGap=26,x0=(W-8*cw-7*gapx)/2,y0=64;
+    for(let i=0;i<CLASSES.length;i++){
+      const tx=x0+(i%8)*(cw+gapx),ty=y0+((i/8)|0)*(ch+rowGap);
+      if(tapIn(tx,ty,cw,ch)){
+        const p2=participants()===2&&sel[0].locked?1:0;
+        if(sel[p2].i===i)pressQ.add(KEYMAP[p2].fire);
+        else if(!sel[p2].locked){sel[p2].i=i;sTick()}
+        curTap=null;return;
+      }
+    }
+  }else if(state==='profiles'){
+    for(let team=0;team<2;team++){
+      const x=team===0?60:W/2+16,w=W/2-76,y=92;
+      for(let f=0;f<4;f++){
+        if(tapIn(x+16,y+316+f*26-12,w-32,24)){
+          if(profTeam===team&&profField===f)pressQ.add('Space');
+          else{profTeam=team;profField=f;sTick()}
+          curTap=null;return;
+        }
+      }
+      if(tapIn(x,y,w,300)&&profTeam!==team){profTeam=team;sTick();curTap=null;return}
+    }
+  }
+  curTap=null;
+}
 function step(){
   frame++;
+  curTap=TOUCH.taps.length?TOUCH.taps.shift():null;
+  if(curTap&&typeof netTap==='function'&&state==='online'){netTap(curTap);curTap=null}
+  else handleMenuTaps();
   if(musicOn&&AC&&frame%30===0)playMusic(currentTune());
   for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.x+=p.vx;p.y+=p.vy;p.vx*=.92;p.vy*=.92;if(--p.life<=0)parts.splice(i,1)}
   for(let i=floats.length-1;i>=0;i--){const f=floats[i];f.y-=.7;if(--f.life<=0)floats.splice(i,1)}
@@ -2460,7 +2558,7 @@ function drawTitle(){
     splash('PRESS SPACE OR ENTER',24,554,0,'#ffd166');
     cx.restore();
   }
-  footer('P1: WASD + SPACE   ·   P2: ARROWS + ENTER   ·   AUTO-AIM ON   ·   F: FULLSCREEN   ·   N: MUSIC');
+  footer(TOUCH.on?'TAP TO START   ·   ⛶ FOR FULLSCREEN':'P1: WASD + SPACE   ·   P2: ARROWS + ENTER   ·   AUTO-AIM ON   ·   F: FULLSCREEN   ·   N: MUSIC');
 }
 /* ---------------- mode select ---------------- */
 function drawMode(){
@@ -2481,7 +2579,7 @@ function drawMode(){
     }
   });
   label('P1: '+prof(0).name+'   ·   P2: '+prof(1).name,W/2,H-42,13,'#c9c4ae');
-  footer('MOVE: W/S OR ARROWS      SELECT: SPACE / ENTER      BACK: ESC');
+  footer(TOUCH.on?'TAP A MODE, TAP AGAIN TO GO':'MOVE: W/S OR ARROWS      SELECT: SPACE / ENTER      BACK: ESC');
   drawToast();
 }
 
@@ -2678,7 +2776,7 @@ function drawSelect(){
       label('STAGE '+(campStage+1)+'  ·  '+MAPS[st.map].name+'  ·  '+AI_LEVELS[st.ai].name,px+pw/2,py+32,12,INK)}
   }
   if(allLocked())splash("LET'S GO!!",30,H-16,-.03,'#ffd166');
-  else footer('MOVE: WASD / ARROWS      LOCK IN: SPACE / ENTER      BACK: ESC');
+  else footer(TOUCH.on?'TAP A TANK, TAP AGAIN TO LOCK IN':'MOVE: WASD / ARROWS      LOCK IN: SPACE / ENTER      BACK: ESC');
   drawToast();
 }
 
@@ -2773,6 +2871,18 @@ function draw(){
 function drawTouchUI(){
   if(!TOUCH.on)return;
   cx.save();
+  // phone co-op: a stick per side and a soft centre line
+  if(mode==='coop'&&!menuish()){
+    cx.globalAlpha=.12;cx.strokeStyle='#fff';cx.lineWidth=2;cx.setLineDash([8,10]);
+    cx.beginPath();cx.moveTo(W/2,40);cx.lineTo(W/2,H-90);cx.stroke();cx.setLineDash([]);
+    if(TOUCH.j2id!==null){
+      cx.globalAlpha=.35;cx.fillStyle='#fff';
+      cx.beginPath();cx.arc(TOUCH.ax2,TOUCH.ay2,52,0,Math.PI*2);cx.fill();
+      cx.globalAlpha=.85;cx.fillStyle=teamColor(1);
+      cx.beginPath();cx.arc(TOUCH.ax2+TOUCH.dx2,TOUCH.ay2+TOUCH.dy2,24,0,Math.PI*2);cx.fill();
+      cx.lineWidth=3;cx.strokeStyle=INK;cx.stroke();
+    }
+  }
   // pop-up joystick
   if(TOUCH.jid!==null&&!menuish()){
     cx.globalAlpha=.35;cx.fillStyle='#fff';
@@ -2782,8 +2892,8 @@ function drawTouchUI(){
     cx.beginPath();cx.arc(TOUCH.ax+TOUCH.dx,TOUCH.ay+TOUCH.dy,24,0,Math.PI*2);cx.fill();
     cx.lineWidth=3;cx.strokeStyle=INK;cx.stroke();
   }
-  // fire button during play
-  if(!menuish()){
+  // fire button during play (solo modes; co-op auto-fires)
+  if(!menuish()&&mode!=='coop'){
     cx.globalAlpha=TOUCH.fire?.95:.5;
     const g=cx.createRadialGradient(FIRE_BTN.x,FIRE_BTN.y-8,6,FIRE_BTN.x,FIRE_BTN.y,FIRE_BTN.r);
     g.addColorStop(0,'#ff7d85');g.addColorStop(1,'#ef3e4a');
@@ -2803,8 +2913,26 @@ function drawTouchUI(){
   }
   cx.restore();cx.globalAlpha=1;
 }
+function drawRotatePrompt(){
+  if(!TOUCH.on)return false;
+  const iw=(typeof window!=='undefined'&&window.innerWidth)||W;
+  const ih=(typeof window!=='undefined'&&window.innerHeight)||H;
+  if(ih<=iw)return false;
+  cx.fillStyle='#14162a';cx.fillRect(0,0,W,H);
+  cx.save();cx.translate(W/2,H/2-40);cx.rotate(Math.sin(frame*.05)*.35+.35);
+  cx.fillStyle='#1c1e33';rr(cx,-34,-58,68,116,12);cx.fill();
+  cx.strokeStyle='#fff';cx.lineWidth=4;rr(cx,-34,-58,68,116,12);cx.stroke();
+  cx.fillStyle='#4cc9f0';rr(cx,-26,-46,52,86,4);cx.fill();
+  cx.restore();
+  splash('ROTATE YOUR PHONE',40,H/2+80,-.02,'#ffd166');
+  label('THIS IS A WIDESCREEN TANK BATTLE',W/2,H/2+120,13,'#c9c4ae');
+  return true;
+}
 const _drawBase=draw;
-draw=function(){_drawBase();drawTouchUI()};
+draw=function(){
+  if(drawRotatePrompt())return;
+  _drawBase();drawTouchUI();
+};
 
 /* ---------------- main loop (fixed 60Hz) ---------------- */
 let last=performance.now(),acc=0;
@@ -2945,7 +3073,39 @@ function netKey(e){
   if(/^[0-9]$/.test(e.key)&&typeBuf.length<4)typeBuf+=e.key;
   if(e.code==='Backspace')typeBuf=typeBuf.slice(0,-1);
 }
+const PAD_KEYS=['1','2','3','4','5','6','7','8','9','DEL','0','GO'];
+function padRect(i){const kw=74,kh=52,gap=8,x0=W/2-(3*kw+2*gap)/2,y0=196;
+  return{x:x0+(i%3)*(kw+gap),y:y0+((i/3)|0)*(kh+gap),w:kw,h:kh}}
+function netTap(p){
+  const hit=(x,y,w,h)=>p.x>=x&&p.x<=x+w&&p.y>=y&&p.y<=y+h;
+  if(NET.pad){
+    for(let i=0;i<12;i++){
+      const r=padRect(i);
+      if(hit(r.x,r.y,r.w,r.h)){
+        const k=PAD_KEYS[i];
+        if(k==='DEL')typeBuf=typeBuf.slice(0,-1);
+        else if(k==='GO'){if(typeBuf.length===4){NET.pad=false;joinTyped()}else sBack()}
+        else if(typeBuf.length<4){typeBuf+=k;sTick();if(typeBuf.length===4){NET.pad=false;joinTyped()}}
+        return;
+      }
+    }
+    NET.pad=false;typeBuf='';sBack();return; // tap outside closes
+  }
+  const busy=NET.waking||NET.status==='CONNECTING'||NET.status==='WAITING';
+  if(busy){if(hit(0,H-40,W,40)){netDisconnect();netStatus('IDLE','');NET.waking=false;sBack()}return}
+  const w=280,h=150,y=132,x0=W/2-w*1.5-20;
+  if(hit(x0,y,w,h)){quickMatch();return}
+  if(hit(x0+w+20,y,w,h)){NET.pad=true;typeBuf='';sTick();return}
+  if(hit(x0+(w+20)*2,y,w,h)){privateRoom();return}
+  if(NET.code&&NET.role&&hit(W/2,304,330,116)){copyLink();return}
+  if(hit(0,0,70,70)){netDisconnect();sBack();goto('mode')}
+}
 stepOnline=function(){
+  if(NET.pad){
+    if(pressQ.has('Escape')){NET.pad=false;typeBuf='';sBack()}
+    if(pressQ.has('Enter')&&typeBuf.length===4){NET.pad=false;joinTyped()}
+    return;
+  }
   if(NET.editing){
     if(pressQ.has('Enter')){
       NET.relay=typeBuf.trim().toLowerCase()||NET.relay;
@@ -2971,6 +3131,22 @@ stepOnline=function(){
 drawOnline=function(){
   screenBg('#1e3350');
   splash('PLAY ONLINE',46,52);
+  if(NET.pad){
+    panel(W/2-160,120,320,330,'#ffd23f',18);
+    label('ENTER ROOM CODE',W/2,136,14,'#fff');
+    cx.fillStyle=INK;cx.font='900 34px system-ui,Arial,sans-serif';
+    cx.textAlign='center';cx.textBaseline='middle';
+    cx.fillText((typeBuf||'')+'----'.slice(typeBuf.length),W/2,172);
+    for(let i=0;i<12;i++){
+      const r=padRect(i),k=PAD_KEYS[i];
+      cx.fillStyle=k==='GO'?'#35a44a':k==='DEL'?'#ef3e4a':CREAM;
+      rr(cx,r.x,r.y,r.w,r.h,10);cx.fill();
+      cx.strokeStyle=INK;cx.lineWidth=3;rr(cx,r.x,r.y,r.w,r.h,10);cx.stroke();
+      label(k,r.x+r.w/2,r.y+r.h/2+1,k.length>1?13:20,(k==='GO'||k==='DEL')?'#fff':INK);
+    }
+    footer('TAP OUTSIDE TO CANCEL');
+    return;
+  }
   const busy=NET.waking||NET.status==='CONNECTING'||NET.status==='WAITING';
   if(NET.editing){
     panel(W/2-330,150,660,150,'#3d7ea6',16);

@@ -128,7 +128,39 @@ function netKey(e){
   if(/^[0-9]$/.test(e.key)&&typeBuf.length<4)typeBuf+=e.key;
   if(e.code==='Backspace')typeBuf=typeBuf.slice(0,-1);
 }
+const PAD_KEYS=['1','2','3','4','5','6','7','8','9','DEL','0','GO'];
+function padRect(i){const kw=74,kh=52,gap=8,x0=W/2-(3*kw+2*gap)/2,y0=196;
+  return{x:x0+(i%3)*(kw+gap),y:y0+((i/3)|0)*(kh+gap),w:kw,h:kh}}
+function netTap(p){
+  const hit=(x,y,w,h)=>p.x>=x&&p.x<=x+w&&p.y>=y&&p.y<=y+h;
+  if(NET.pad){
+    for(let i=0;i<12;i++){
+      const r=padRect(i);
+      if(hit(r.x,r.y,r.w,r.h)){
+        const k=PAD_KEYS[i];
+        if(k==='DEL')typeBuf=typeBuf.slice(0,-1);
+        else if(k==='GO'){if(typeBuf.length===4){NET.pad=false;joinTyped()}else sBack()}
+        else if(typeBuf.length<4){typeBuf+=k;sTick();if(typeBuf.length===4){NET.pad=false;joinTyped()}}
+        return;
+      }
+    }
+    NET.pad=false;typeBuf='';sBack();return; // tap outside closes
+  }
+  const busy=NET.waking||NET.status==='CONNECTING'||NET.status==='WAITING';
+  if(busy){if(hit(0,H-40,W,40)){netDisconnect();netStatus('IDLE','');NET.waking=false;sBack()}return}
+  const w=280,h=150,y=132,x0=W/2-w*1.5-20;
+  if(hit(x0,y,w,h)){quickMatch();return}
+  if(hit(x0+w+20,y,w,h)){NET.pad=true;typeBuf='';sTick();return}
+  if(hit(x0+(w+20)*2,y,w,h)){privateRoom();return}
+  if(NET.code&&NET.role&&hit(W/2,304,330,116)){copyLink();return}
+  if(hit(0,0,70,70)){netDisconnect();sBack();goto('mode')}
+}
 stepOnline=function(){
+  if(NET.pad){
+    if(pressQ.has('Escape')){NET.pad=false;typeBuf='';sBack()}
+    if(pressQ.has('Enter')&&typeBuf.length===4){NET.pad=false;joinTyped()}
+    return;
+  }
   if(NET.editing){
     if(pressQ.has('Enter')){
       NET.relay=typeBuf.trim().toLowerCase()||NET.relay;
@@ -154,6 +186,22 @@ stepOnline=function(){
 drawOnline=function(){
   screenBg('#1e3350');
   splash('PLAY ONLINE',46,52);
+  if(NET.pad){
+    panel(W/2-160,120,320,330,'#ffd23f',18);
+    label('ENTER ROOM CODE',W/2,136,14,'#fff');
+    cx.fillStyle=INK;cx.font='900 34px system-ui,Arial,sans-serif';
+    cx.textAlign='center';cx.textBaseline='middle';
+    cx.fillText((typeBuf||'')+'----'.slice(typeBuf.length),W/2,172);
+    for(let i=0;i<12;i++){
+      const r=padRect(i),k=PAD_KEYS[i];
+      cx.fillStyle=k==='GO'?'#35a44a':k==='DEL'?'#ef3e4a':CREAM;
+      rr(cx,r.x,r.y,r.w,r.h,10);cx.fill();
+      cx.strokeStyle=INK;cx.lineWidth=3;rr(cx,r.x,r.y,r.w,r.h,10);cx.stroke();
+      label(k,r.x+r.w/2,r.y+r.h/2+1,k.length>1?13:20,(k==='GO'||k==='DEL')?'#fff':INK);
+    }
+    footer('TAP OUTSIDE TO CANCEL');
+    return;
+  }
   const busy=NET.waking||NET.status==='CONNECTING'||NET.status==='WAITING';
   if(NET.editing){
     panel(W/2-330,150,660,150,'#3d7ea6',16);

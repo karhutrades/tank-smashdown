@@ -153,8 +153,71 @@ function currentTune(){
   const m=MAPS[mapIndex];
   return m?m.world:'menu';
 }
+let curTap=null;
+function tapIn(x,y,w,h){return curTap&&curTap.x>=x&&curTap.x<=x+w&&curTap.y>=y&&curTap.y<=y+h}
+function handleMenuTaps(){
+  if(!curTap)return;
+  if(state==='title'||state==='game'||state==='round'){pressQ.add('Space');curTap=null;return}
+  if(state==='mode'){
+    const w=560,x=(W-w)/2;
+    for(let i=0;i<MODES.length;i++){
+      if(tapIn(x-10,104+i*74-6,w+20,74)){
+        if(menuIdx===i)pressQ.add('Space');else{menuIdx=i;sTick()}
+        curTap=null;return;
+      }
+    }
+  }else if(state==='difficulty'){
+    const cw=250,gap=20,x0=(W-3*cw-2*gap)/2;
+    for(let i=0;i<3;i++){
+      if(tapIn(x0+i*(cw+gap),150,cw,220)){
+        if(subIdx===i)pressQ.add('Space');else{subIdx=i;sTick()}
+        curTap=null;return;
+      }
+    }
+  }else if(state==='campmenu'){
+    const cols=8,cw=104,ch=74,gap=10,x0=(W-cols*cw-(cols-1)*gap)/2;
+    for(let i=0;i<MAPS.length;i++){
+      const tx=x0+(i%cols)*(cw+gap),ty=132+((i/cols)|0)*(ch+gap);
+      if(tapIn(tx,ty,cw,ch)){
+        const maxStage=Math.min(prof(0).stats.campaign|0,MAPS.length-1);
+        if(i>maxStage){toast={txt:'CLEAR THE EARLIER STAGES FIRST',life:150};sBack()}
+        else if(subIdx===i)pressQ.add('Space');
+        else{subIdx=i;sTick()}
+        curTap=null;return;
+      }
+    }
+    if(curTap.y>420){pressQ.add('Space');curTap=null;return}
+  }else if(state==='select'){
+    const cw=110,ch=104,gapx=7,rowGap=26,x0=(W-8*cw-7*gapx)/2,y0=64;
+    for(let i=0;i<CLASSES.length;i++){
+      const tx=x0+(i%8)*(cw+gapx),ty=y0+((i/8)|0)*(ch+rowGap);
+      if(tapIn(tx,ty,cw,ch)){
+        const p2=participants()===2&&sel[0].locked?1:0;
+        if(sel[p2].i===i)pressQ.add(KEYMAP[p2].fire);
+        else if(!sel[p2].locked){sel[p2].i=i;sTick()}
+        curTap=null;return;
+      }
+    }
+  }else if(state==='profiles'){
+    for(let team=0;team<2;team++){
+      const x=team===0?60:W/2+16,w=W/2-76,y=92;
+      for(let f=0;f<4;f++){
+        if(tapIn(x+16,y+316+f*26-12,w-32,24)){
+          if(profTeam===team&&profField===f)pressQ.add('Space');
+          else{profTeam=team;profField=f;sTick()}
+          curTap=null;return;
+        }
+      }
+      if(tapIn(x,y,w,300)&&profTeam!==team){profTeam=team;sTick();curTap=null;return}
+    }
+  }
+  curTap=null;
+}
 function step(){
   frame++;
+  curTap=TOUCH.taps.length?TOUCH.taps.shift():null;
+  if(curTap&&typeof netTap==='function'&&state==='online'){netTap(curTap);curTap=null}
+  else handleMenuTaps();
   if(musicOn&&AC&&frame%30===0)playMusic(currentTune());
   for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.x+=p.vx;p.y+=p.vy;p.vx*=.92;p.vy*=.92;if(--p.life<=0)parts.splice(i,1)}
   for(let i=floats.length-1;i>=0;i--){const f=floats[i];f.y-=.7;if(--f.life<=0)floats.splice(i,1)}

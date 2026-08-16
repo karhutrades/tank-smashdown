@@ -291,14 +291,17 @@ function toggleFullscreen(){
   try{
     const el=(document.querySelector&&document.querySelector('.wrap'))||cv;
     if(document.fullscreenElement)document.exitFullscreen();
-    else if(el.requestFullscreen)el.requestFullscreen();
+    else if(el.requestFullscreen){
+      el.requestFullscreen();
+      try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})}catch(e){}
+    }
   }catch(e){}
 }
 if(cv.addEventListener)cv.addEventListener('dblclick',toggleFullscreen);
 /* ---------------- touch: pop-up joystick + fire button ----------------
    The stick appears wherever the thumb lands and vanishes on release.
    In menus a tap = confirm and a flick = move the cursor. */
-const TOUCH={on:false,jid:null,ax:0,ay:0,dx:0,dy:0,fid:null,fire:false,t0:0,sx:0,sy:0};
+const TOUCH={on:false,jid:null,ax:0,ay:0,dx:0,dy:0,fid:null,fire:false,t0:0,sx:0,sy:0,taps:[],j2id:null,ax2:0,ay2:0,dx2:0,dy2:0};
 function touchXY(t){const r=cv.getBoundingClientRect();return{x:(t.clientX-r.left)/r.width*W,y:(t.clientY-r.top)/r.height*H}}
 const FIRE_BTN={x:W-78,y:H-160,r:46};
 const FS_BTN={x:W-30,y:30,r:20};
@@ -312,7 +315,21 @@ cv.addEventListener('touchstart',e=>{
     const p=touchXY(t);
     if(inC(p,FS_BTN)){toggleFullscreen();continue}
     if(inC(p,BACK_BTN)&&menuish()){pressQ.add('Escape');continue}
-    if(!menuish()&&inC(p,FIRE_BTN)&&TOUCH.fid===null){TOUCH.fid=t.identifier;TOUCH.fire=true;continue}
+    if(!menuish()){
+      if(mode==='coop'){
+        // pass-the-phone co-op: each half of the screen is one player's stick,
+        // and guns auto-fire while the turret is locked on
+        if(p.x<W/2&&TOUCH.jid===null){TOUCH.jid=t.identifier;TOUCH.ax=p.x;TOUCH.ay=p.y;TOUCH.dx=0;TOUCH.dy=0}
+        else if(p.x>=W/2&&TOUCH.j2id===null){TOUCH.j2id=t.identifier;TOUCH.ax2=p.x;TOUCH.ay2=p.y;TOUCH.dx2=0;TOUCH.dy2=0}
+        continue;
+      }
+      // right zone fires, left zone steers - two thumbs, no hunting for buttons
+      if(p.x>W*.62&&TOUCH.fid===null){TOUCH.fid=t.identifier;TOUCH.fire=true;continue}
+      if(p.x<=W*.62&&TOUCH.jid===null){
+        TOUCH.jid=t.identifier;TOUCH.ax=p.x;TOUCH.ay=p.y;TOUCH.dx=0;TOUCH.dy=0;
+      }
+      continue;
+    }
     if(TOUCH.jid===null){
       TOUCH.jid=t.identifier;TOUCH.ax=p.x;TOUCH.ay=p.y;TOUCH.dx=0;TOUCH.dy=0;
       TOUCH.t0=performance.now();TOUCH.sx=p.x;TOUCH.sy=p.y;
@@ -322,22 +339,29 @@ cv.addEventListener('touchstart',e=>{
 cv.addEventListener('touchmove',e=>{
   e.preventDefault();
   for(const t of e.changedTouches){
-    if(t.identifier!==TOUCH.jid)continue;
     const p=touchXY(t);
-    let dx=p.x-TOUCH.ax,dy=p.y-TOUCH.ay;
-    const d=Math.hypot(dx,dy);
-    if(d>52){dx=dx/d*52;dy=dy/d*52;TOUCH.ax=p.x-dx;TOUCH.ay=p.y-dy} // the base follows a long drag
-    TOUCH.dx=dx;TOUCH.dy=dy;
+    if(t.identifier===TOUCH.jid){
+      let dx=p.x-TOUCH.ax,dy=p.y-TOUCH.ay;
+      const d=Math.hypot(dx,dy);
+      if(d>52){dx=dx/d*52;dy=dy/d*52;TOUCH.ax=p.x-dx;TOUCH.ay=p.y-dy}
+      TOUCH.dx=dx;TOUCH.dy=dy;
+    }else if(t.identifier===TOUCH.j2id){
+      let dx=p.x-TOUCH.ax2,dy=p.y-TOUCH.ay2;
+      const d=Math.hypot(dx,dy);
+      if(d>52){dx=dx/d*52;dy=dy/d*52;TOUCH.ax2=p.x-dx;TOUCH.ay2=p.y-dy}
+      TOUCH.dx2=dx;TOUCH.dy2=dy;
+    }
   }
 },{passive:false});
 const touchEnd=e=>{
   e.preventDefault();
   for(const t of e.changedTouches){
     if(t.identifier===TOUCH.fid){TOUCH.fid=null;TOUCH.fire=false}
+    if(t.identifier===TOUCH.j2id){TOUCH.j2id=null;TOUCH.dx2=0;TOUCH.dy2=0}
     if(t.identifier===TOUCH.jid){
       if(menuish()){
         const p=touchXY(t),mx=p.x-TOUCH.sx,my=p.y-TOUCH.sy,md=Math.hypot(mx,my);
-        if(performance.now()-TOUCH.t0<450&&md<16)pressQ.add('Space');
+        if(performance.now()-TOUCH.t0<500&&md<18)TOUCH.taps.push({x:p.x,y:p.y});
         else if(md>=26)pressQ.add(Math.abs(mx)>Math.abs(my)?(mx>0?'KeyD':'KeyA'):(my>0?'KeyS':'KeyW'));
       }
       TOUCH.jid=null;TOUCH.dx=0;TOUCH.dy=0;

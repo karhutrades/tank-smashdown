@@ -104,7 +104,7 @@ function drawTitle(){
     splash('PRESS SPACE OR ENTER',24,554,0,'#ffd166');
     cx.restore();
   }
-  footer('P1: WASD + SPACE   ·   P2: ARROWS + ENTER   ·   AUTO-AIM ON   ·   F: FULLSCREEN   ·   N: MUSIC');
+  footer(TOUCH.on?'TAP TO START   ·   ⛶ FOR FULLSCREEN':'P1: WASD + SPACE   ·   P2: ARROWS + ENTER   ·   AUTO-AIM ON   ·   F: FULLSCREEN   ·   N: MUSIC');
 }
 /* ---------------- mode select ---------------- */
 function drawMode(){
@@ -125,7 +125,7 @@ function drawMode(){
     }
   });
   label('P1: '+prof(0).name+'   ·   P2: '+prof(1).name,W/2,H-42,13,'#c9c4ae');
-  footer('MOVE: W/S OR ARROWS      SELECT: SPACE / ENTER      BACK: ESC');
+  footer(TOUCH.on?'TAP A MODE, TAP AGAIN TO GO':'MOVE: W/S OR ARROWS      SELECT: SPACE / ENTER      BACK: ESC');
   drawToast();
 }
 
@@ -322,7 +322,7 @@ function drawSelect(){
       label('STAGE '+(campStage+1)+'  ·  '+MAPS[st.map].name+'  ·  '+AI_LEVELS[st.ai].name,px+pw/2,py+32,12,INK)}
   }
   if(allLocked())splash("LET'S GO!!",30,H-16,-.03,'#ffd166');
-  else footer('MOVE: WASD / ARROWS      LOCK IN: SPACE / ENTER      BACK: ESC');
+  else footer(TOUCH.on?'TAP A TANK, TAP AGAIN TO LOCK IN':'MOVE: WASD / ARROWS      LOCK IN: SPACE / ENTER      BACK: ESC');
   drawToast();
 }
 
@@ -417,6 +417,18 @@ function draw(){
 function drawTouchUI(){
   if(!TOUCH.on)return;
   cx.save();
+  // phone co-op: a stick per side and a soft centre line
+  if(mode==='coop'&&!menuish()){
+    cx.globalAlpha=.12;cx.strokeStyle='#fff';cx.lineWidth=2;cx.setLineDash([8,10]);
+    cx.beginPath();cx.moveTo(W/2,40);cx.lineTo(W/2,H-90);cx.stroke();cx.setLineDash([]);
+    if(TOUCH.j2id!==null){
+      cx.globalAlpha=.35;cx.fillStyle='#fff';
+      cx.beginPath();cx.arc(TOUCH.ax2,TOUCH.ay2,52,0,Math.PI*2);cx.fill();
+      cx.globalAlpha=.85;cx.fillStyle=teamColor(1);
+      cx.beginPath();cx.arc(TOUCH.ax2+TOUCH.dx2,TOUCH.ay2+TOUCH.dy2,24,0,Math.PI*2);cx.fill();
+      cx.lineWidth=3;cx.strokeStyle=INK;cx.stroke();
+    }
+  }
   // pop-up joystick
   if(TOUCH.jid!==null&&!menuish()){
     cx.globalAlpha=.35;cx.fillStyle='#fff';
@@ -426,8 +438,8 @@ function drawTouchUI(){
     cx.beginPath();cx.arc(TOUCH.ax+TOUCH.dx,TOUCH.ay+TOUCH.dy,24,0,Math.PI*2);cx.fill();
     cx.lineWidth=3;cx.strokeStyle=INK;cx.stroke();
   }
-  // fire button during play
-  if(!menuish()){
+  // fire button during play (solo modes; co-op auto-fires)
+  if(!menuish()&&mode!=='coop'){
     cx.globalAlpha=TOUCH.fire?.95:.5;
     const g=cx.createRadialGradient(FIRE_BTN.x,FIRE_BTN.y-8,6,FIRE_BTN.x,FIRE_BTN.y,FIRE_BTN.r);
     g.addColorStop(0,'#ff7d85');g.addColorStop(1,'#ef3e4a');
@@ -447,8 +459,26 @@ function drawTouchUI(){
   }
   cx.restore();cx.globalAlpha=1;
 }
+function drawRotatePrompt(){
+  if(!TOUCH.on)return false;
+  const iw=(typeof window!=='undefined'&&window.innerWidth)||W;
+  const ih=(typeof window!=='undefined'&&window.innerHeight)||H;
+  if(ih<=iw)return false;
+  cx.fillStyle='#14162a';cx.fillRect(0,0,W,H);
+  cx.save();cx.translate(W/2,H/2-40);cx.rotate(Math.sin(frame*.05)*.35+.35);
+  cx.fillStyle='#1c1e33';rr(cx,-34,-58,68,116,12);cx.fill();
+  cx.strokeStyle='#fff';cx.lineWidth=4;rr(cx,-34,-58,68,116,12);cx.stroke();
+  cx.fillStyle='#4cc9f0';rr(cx,-26,-46,52,86,4);cx.fill();
+  cx.restore();
+  splash('ROTATE YOUR PHONE',40,H/2+80,-.02,'#ffd166');
+  label('THIS IS A WIDESCREEN TANK BATTLE',W/2,H/2+120,13,'#c9c4ae');
+  return true;
+}
 const _drawBase=draw;
-draw=function(){_drawBase();drawTouchUI()};
+draw=function(){
+  if(drawRotatePrompt())return;
+  _drawBase();drawTouchUI();
+};
 
 /* ---------------- main loop (fixed 60Hz) ---------------- */
 let last=performance.now(),acc=0;

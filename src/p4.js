@@ -309,6 +309,16 @@ function aiInput(t){
   return inp;
 }
 function humanInput(t){
+  // phone co-op: your half of the screen is your stick, guns fire on lock
+  if(TOUCH.on&&mode==='coop'&&(TOUCH.jid!==null||TOUCH.j2id!==null)){
+    const sx=t.team===0?TOUCH.dx:TOUCH.dx2,sy=t.team===0?TOUCH.dy:TOUCH.dy2;
+    const jl=Math.hypot(sx,sy);
+    const k0=KEYMAP[t.team];
+    if(jl>9)return{dx:sx/jl,dy:sy/jl,fire:t.lock>18||!!keys[k0.fire]};
+    return{dx:(keys[k0.right]?1:0)-(keys[k0.left]?1:0),
+           dy:(keys[k0.down]?1:0)-(keys[k0.up]?1:0),
+           fire:t.lock>18||!!keys[k0.fire]};
+  }
   // touch joystick drives the local tank (P1 offline, your tank online)
   if(TOUCH.on&&(t.team===0||t.netLocal)){
     const jl=Math.hypot(TOUCH.dx,TOUCH.dy);
