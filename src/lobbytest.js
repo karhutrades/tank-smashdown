@@ -22,7 +22,7 @@ const iv = setInterval(() => {
     G.press('Enter');
     phase = 2;
   }
-  if (G.state === 'select' && !G.sel[0].locked) { G.sel[0].i = role === 'host' ? 1 : 3; G.press('Space') }
+  if (G.state === 'select' && !G.sel[0].locked) { G.sel[0].i = role === 'host' ? 0 : 1; G.press('Space') }
   if (['ready', 'play'].includes(G.state)) {
     say('IN THE MATCH:', G.tanks.map(t => t.cls.name).join(' vs '));
     clearInterval(iv); clearTimeout(keepalive); process.exit(0);

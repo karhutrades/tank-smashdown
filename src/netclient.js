@@ -48,7 +48,7 @@ const iv = setInterval(() => {
   if (G.NET.peer && !reported.peer) { reported.peer = true; say('peer connected, role =', G.NET.role); }
   if (G.state === 'select' && !reported.picked) {
     reported.picked = true;
-    G.sel[0].i = role === 'host' ? 2 : 3;
+    G.sel[0].i = role === 'host' ? 0 : 1;
     G.press('Space');            // lock in
     say('locked in class', G.sel[0].i);
   }
