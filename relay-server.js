@@ -107,6 +107,23 @@ const server = http.createServer((req, res) => {
   res.end('Tank Smashdown relay is running. Point the game here with ws:// or wss://\n');
 });
 
+/* reap dead connections: phones that lock or lose signal never send a close
+   frame, and a zombie sitting in a room blocks real players from pairing */
+setInterval(() => {
+  const now = Date.now();
+  for (const peers of [...rooms.values()]) {
+    for (const p of [...peers]) {
+      if (now - (p._seen || 0) > 45000) {
+        log('reap idle socket in', p._room);
+        leave(p);
+        try { p.destroy(); } catch (e) {}
+      } else {
+        try { p.write(Buffer.from([0x89, 0x00])); } catch (e) {} // ws ping
+      }
+    }
+  }
+}, 15000);
+
 server.on('upgrade', (req, sock) => {
   const key = req.headers['sec-websocket-key'];
   if (!key) { sock.destroy(); return; }
@@ -119,9 +136,11 @@ server.on('upgrade', (req, sock) => {
   );
   sock.setNoDelay(true);
   sock._room = null;
+  sock._seen = Date.now();
   let buf = Buffer.alloc(0);
 
   sock.on('data', chunk => {
+    sock._seen = Date.now();
     buf = Buffer.concat([buf, chunk]);
     for (;;) {
       if (buf.length < 2) return;

@@ -90,6 +90,15 @@ function netEnterSelect(){
   if(state==='online'){mode='online';enterSelect()}
 }
 setInterval(()=>{if(NET.ws&&NET.ws.readyState===1)netSend({t:'hb'})},20000);
+/* a quick-matcher stuck WAITING hops lobbies in case the room held a zombie */
+setInterval(()=>{
+  if(NET.quick&&NET.status==='WAITING'&&NET.connected&&!NET.peer){
+    NET.qslot=(NET.qslot+1)%6;
+    const nxt=NET.qslot===0?'PLAY':'PLAY'+(NET.qslot+1);
+    NET.code=nxt;netSend({t:'join',room:nxt,role:undefined});
+    netStatus('WAITING','looking for a player · lobby '+(NET.qslot+1));
+  }
+},20000);
 /* opened from a shared ?room= link: jump straight into that room */
 if(autoRoom){
   mode='online';state='online';NET.code=autoRoom;

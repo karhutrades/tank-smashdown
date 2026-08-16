@@ -5,10 +5,11 @@ KEY=~/.ssh/oracle.key
 HOST=ubuntu@132.145.75.51
 cd "$(dirname "$0")"
 
-scp -i $KEY index.html relay-server.js $HOST:/tmp/
+scp -i $KEY index.html relay-server.js manifest.webmanifest $HOST:/tmp/
 ssh -i $KEY $HOST 'set -e
   sudo cp /tmp/index.html /var/www/tanks/index.html
-  sudo chmod a+r /var/www/tanks/index.html
+  sudo cp /tmp/manifest.webmanifest /var/www/tanks/manifest.webmanifest
+  sudo chmod a+r /var/www/tanks/index.html /var/www/tanks/manifest.webmanifest
   if ! cmp -s /tmp/relay-server.js /opt/tanksrelay/relay-server.js; then
     sudo cp /tmp/relay-server.js /opt/tanksrelay/relay-server.js
     sudo systemctl restart tanksrelay

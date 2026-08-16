@@ -1,14 +1,18 @@
 <title>Tank Smashdown</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f1220">
+<link rel="manifest" href="manifest.webmanifest">
 <style>
   html,body{height:100%;height:100dvh}
-  body{margin:0;background:#0f1220;display:flex;align-items:center;justify-content:center;overflow:hidden;
-    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-  .wrap{width:min(100vw,152vh);padding:10px;box-sizing:border-box}
-  @supports (height:100dvh){.wrap{width:min(100vw,152dvh)}}
-  canvas{display:block;width:100%;height:auto;border-radius:14px;box-shadow:0 18px 70px rgba(0,0,0,.6);
+  body{margin:0;background:#0f1220;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .wrap{width:min(100vw,160vh);padding:0;box-sizing:border-box}
+  @supports (height:100dvh){.wrap{width:min(100vw,160dvh)}}
+  canvas{display:block;width:100%;height:auto;border-radius:10px;box-shadow:0 18px 70px rgba(0,0,0,.6);
     touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-  @media (max-width:900px){.wrap{padding:0}canvas{border-radius:0;box-shadow:none}}
+  @media (max-width:1100px){canvas{border-radius:0;box-shadow:none}}
   .wrap:fullscreen{display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:0;background:#0f1220}
   .wrap:fullscreen canvas{width:min(100vw,160vh);height:auto;border-radius:0;box-shadow:none}
 </style>
@@ -48,32 +52,32 @@ const GUNS={
 const TABS=['SPEED','BALANCED','HEAVY & TRICK'];
 const CLASSES=[
  /* -------- SPEED -------- */
- {name:'SCOUT',  tab:0,skin:'scout',   pilot:'scout',   gun:'rapid',   trait:'spinup',color:'#ffd23f',dark:'#cba317',light:'#ffe89a',hp:4,speed:3.9,radius:14,bl:20,desc:'TWIN RAPID GUNS',perk:'GUN SPINS UP AS YOU HOLD FIRE',pips:[5,2,2],unlock:null},
- {name:'DART',   tab:0,skin:'scout',   pilot:'dart',    gun:'twin',    trait:'none',  color:'#8ac926',dark:'#5f9418',light:'#b9e769',hp:4,speed:4.2,radius:13,bl:19,desc:'DOUBLE PEASHOOTER',perk:'FASTEST TREADS IN THE GAME',pips:[5,1,2],unlock:null},
- {name:'SURGE',  tab:0,skin:'blaze',   pilot:'surge',   gun:'burst',   trait:'none',  color:'#4cc9f0',dark:'#2a93b8',light:'#8adcf5',hp:4,speed:3.8,radius:14,bl:21,desc:'3-ROUND BURST',perk:'TIGHT TRIPLE TAP, NO SPREAD',pips:[4,2,3],unlock:null},
- {name:'VIPER',  tab:0,skin:'ricochet',pilot:'viper',   gun:'gatling', trait:'none',  color:'#80b918',dark:'#5a8310',light:'#b5dd5e',hp:4,speed:3.7,radius:14,bl:22,desc:'BUZZSAW GATLING',perk:'SPRAYS FASTER THAN ANYTHING',pips:[4,2,3],unlock:null},
- {name:'BLAZE',  tab:0,skin:'blaze',   pilot:'blaze',   gun:'flame',   trait:'none',  color:'#d95d39',dark:'#a83f22',light:'#f28f6e',hp:5,speed:3.4,radius:14.5,bl:18,desc:'SHORT RANGE FLAME',perk:'FLAMES LEAVE BURNING GROUND',pips:[4,3,3],unlock:{k:'wins',n:6, txt:'WIN 6 MATCHES'}},
- {name:'WISP',   tab:0,skin:'phantom', pilot:'wisp',    gun:'phasefast',trait:'phase',color:'#bde0fe',dark:'#7fa8cc',light:'#e2f1ff',hp:4,speed:3.8,radius:13.5,bl:22,desc:'QUICK GHOST BOLTS',perk:'FIRING PHASES YOU BRIEFLY',pips:[5,1,2],unlock:{k:'kos',n:25,txt:'SCORE 25 KOs'}},
- {name:'JACKAL', tab:0,skin:'scatter', pilot:'jackal',  gun:'blunder', trait:'still', color:'#e0a458',dark:'#b07830',light:'#f0c791',hp:5,speed:3.6,radius:14,bl:17,desc:'5-PELLET BLUNDERBUSS',perk:'STAND STILL FOR A TIGHT SPREAD',pips:[4,2,4],unlock:{k:'rounds',n:40,txt:'PLAY 40 ROUNDS'}},
- {name:'COMET',  tab:0,skin:'longshot',pilot:'comet',   gun:'slug',    trait:'none',  color:'#90e0ef',dark:'#5aa8b8',light:'#c1eef7',hp:4,speed:3.6,radius:13.5,bl:28,desc:'FAST HEAVY SLUG',perk:'HITS LIKE A TRUCK AT ANY RANGE',pips:[4,1,4],unlock:{k:'wins',n:10,txt:'WIN 10 MATCHES'}},
+ {name:'SCOUT',  tab:0,shape:'box',deco:'stripe',skin:'scout',   pilot:'scout',   gun:'rapid',   trait:'spinup',color:'#ffd23f',dark:'#cba317',light:'#ffe89a',hp:4,speed:3.9,radius:14,bl:20,desc:'TWIN RAPID GUNS',perk:'GUN SPINS UP AS YOU HOLD FIRE',pips:[5,2,2],unlock:null},
+ {name:'DART',   tab:0,shape:'wedge',deco:'fin',skin:'scout',   pilot:'dart',    gun:'twin',    trait:'none',  color:'#8ac926',dark:'#5f9418',light:'#b9e769',hp:4,speed:4.2,radius:13,bl:19,desc:'DOUBLE PEASHOOTER',perk:'FASTEST TREADS IN THE GAME',pips:[5,1,2],unlock:null},
+ {name:'SURGE',  tab:0,shape:'box',deco:'bolt',skin:'blaze',   pilot:'surge',   gun:'burst',   trait:'none',  color:'#4cc9f0',dark:'#2a93b8',light:'#8adcf5',hp:4,speed:3.8,radius:14,bl:21,desc:'3-ROUND BURST',perk:'TIGHT TRIPLE TAP, NO SPREAD',pips:[4,2,3],unlock:null},
+ {name:'VIPER',  tab:0,shape:'wedge',deco:'spikes',skin:'ricochet',pilot:'viper',   gun:'gatling', trait:'none',  color:'#80b918',dark:'#5a8310',light:'#b5dd5e',hp:4,speed:3.7,radius:14,bl:22,desc:'BUZZSAW GATLING',perk:'SPRAYS FASTER THAN ANYTHING',pips:[4,2,3],unlock:null},
+ {name:'BLAZE',  tab:0,shape:'box',deco:'flame',skin:'blaze',   pilot:'blaze',   gun:'flame',   trait:'none',  color:'#d95d39',dark:'#a83f22',light:'#f28f6e',hp:5,speed:3.4,radius:14.5,bl:18,desc:'SHORT RANGE FLAME',perk:'FLAMES LEAVE BURNING GROUND',pips:[4,3,3],unlock:{k:'wins',n:6, txt:'WIN 6 MATCHES'}},
+ {name:'WISP',   tab:0,shape:'hover',deco:'none',skin:'phantom', pilot:'wisp',    gun:'phasefast',trait:'phase',color:'#bde0fe',dark:'#7fa8cc',light:'#e2f1ff',hp:4,speed:3.8,radius:13.5,bl:22,desc:'QUICK GHOST BOLTS',perk:'FIRING PHASES YOU BRIEFLY',pips:[5,1,2],unlock:{k:'kos',n:25,txt:'SCORE 25 KOs'}},
+ {name:'JACKAL', tab:0,shape:'box',deco:'sand',skin:'scatter', pilot:'jackal',  gun:'blunder', trait:'still', color:'#e0a458',dark:'#b07830',light:'#f0c791',hp:5,speed:3.6,radius:14,bl:17,desc:'5-PELLET BLUNDERBUSS',perk:'STAND STILL FOR A TIGHT SPREAD',pips:[4,2,4],unlock:{k:'rounds',n:40,txt:'PLAY 40 ROUNDS'}},
+ {name:'COMET',  tab:0,shape:'long',deco:'fin',skin:'longshot',pilot:'comet',   gun:'slug',    trait:'none',  color:'#90e0ef',dark:'#5aa8b8',light:'#c1eef7',hp:4,speed:3.6,radius:13.5,bl:28,desc:'FAST HEAVY SLUG',perk:'HITS LIKE A TRUCK AT ANY RANGE',pips:[4,1,4],unlock:{k:'wins',n:10,txt:'WIN 10 MATCHES'}},
  /* -------- BALANCED -------- */
- {name:'BRAWLER',tab:1,skin:'brawler', pilot:'brawler', gun:'cannon',  trait:'heavy4',color:'#ef3e4a',dark:'#b3202c',light:'#ff7d85',hp:5,speed:3.1,radius:15,bl:26,desc:'BALANCED CANNON',perk:'EVERY 4TH SHELL IS HEAVY',pips:[3,3,3],unlock:null},
- {name:'LONGSHOT',tab:1,skin:'longshot',pilot:'longshot',gun:'sniper', trait:'none',  color:'#35a44a',dark:'#1f7c32',light:'#6cd07e',hp:4,speed:3.3,radius:14,bl:34,desc:'SNIPER · 1-3 DMG BY RANGE',perk:'DAMAGE GROWS WITH DISTANCE',pips:[3,2,4],unlock:null},
- {name:'SCATTER',tab:1,skin:'scatter', pilot:'scatter', gun:'scatter', trait:'still', color:'#ff8c42',dark:'#d3652a',light:'#ffb27a',hp:5,speed:3.0,radius:15,bl:18,desc:'QUAD SPREAD SHOT',perk:'STAND STILL FOR A TIGHT SPREAD',pips:[3,3,4],unlock:{k:'wins',n:2, txt:'WIN 2 MATCHES'}},
- {name:'RICOCHET',tab:1,skin:'ricochet',pilot:'ricochet',gun:'ricochet',trait:'bank', color:'#2ec4b6',dark:'#1e8f85',light:'#6ce4d8',hp:5,speed:3.2,radius:15,bl:24,desc:'BOUNCES OFF WALLS',perk:'BANKED SHOTS HIT HARDER',pips:[4,3,3],unlock:{k:'kos', n:15,txt:'SCORE 15 KOs'}},
- {name:'SLUGGER',tab:1,skin:'titan',   pilot:'slugger', gun:'slug',    trait:'heavy4',color:'#b5838d',dark:'#8a5a64',light:'#d4aab2',hp:5,speed:2.9,radius:15.5,bl:26,desc:'HEAVY SLUG RIFLE',perk:'EVERY 4TH SHELL IS HEAVY',pips:[2,4,4],unlock:{k:'wins',n:4,txt:'WIN 4 MATCHES'}},
- {name:'RANGER', tab:1,skin:'longshot',pilot:'ranger',  gun:'burst',   trait:'none',  color:'#588157',dark:'#3e5d3d',light:'#8fb08e',hp:5,speed:3.2,radius:14.5,bl:26,desc:'MARKSMAN BURSTS',perk:'STEADY TRIPLE VOLLEYS',pips:[3,3,3],unlock:{k:'rounds',n:25,txt:'PLAY 25 ROUNDS'}},
- {name:'JESTER', tab:1,skin:'ricochet',pilot:'jester',  gun:'bounce3', trait:'bank',  color:'#f06fa8',dark:'#bc4a80',light:'#f8a6c9',hp:5,speed:3.1,radius:15,bl:22,desc:'TRIPLE-BOUNCE BALLS',perk:'BANKED SHOTS HIT HARDER',pips:[3,3,3],unlock:{k:'kos',n:40,txt:'SCORE 40 KOs'}},
- {name:'TRICKSTER',tab:1,skin:'phantom',pilot:'trickster',gun:'minegun',trait:'none', color:'#0f8b8d',dark:'#0a6163',light:'#4db3b5',hp:5,speed:3.1,radius:14.5,bl:20,desc:'LOBS PROXIMITY CHARGES',perk:'SPENT SHOTS BECOME MINES',pips:[3,3,3],unlock:{k:'campaign',n:6,txt:'CLEAR 6 CAMPAIGN STAGES'}},
+ {name:'BRAWLER',tab:1,shape:'box',deco:'star',skin:'brawler', pilot:'brawler', gun:'cannon',  trait:'heavy4',color:'#ef3e4a',dark:'#b3202c',light:'#ff7d85',hp:5,speed:3.1,radius:15,bl:26,desc:'BALANCED CANNON',perk:'EVERY 4TH SHELL IS HEAVY',pips:[3,3,3],unlock:null},
+ {name:'LONGSHOT',tab:1,shape:'long',deco:'camo',skin:'longshot',pilot:'longshot',gun:'sniper', trait:'none',  color:'#35a44a',dark:'#1f7c32',light:'#6cd07e',hp:4,speed:3.3,radius:14,bl:34,desc:'SNIPER · 1-3 DMG BY RANGE',perk:'DAMAGE GROWS WITH DISTANCE',pips:[3,2,4],unlock:null},
+ {name:'SCATTER',tab:1,shape:'box',deco:'checker',skin:'scatter', pilot:'scatter', gun:'scatter', trait:'still', color:'#ff8c42',dark:'#d3652a',light:'#ffb27a',hp:5,speed:3.0,radius:15,bl:18,desc:'QUAD SPREAD SHOT',perk:'STAND STILL FOR A TIGHT SPREAD',pips:[3,3,4],unlock:{k:'wins',n:2, txt:'WIN 2 MATCHES'}},
+ {name:'RICOCHET',tab:1,shape:'hex',deco:'none',skin:'ricochet',pilot:'ricochet',gun:'ricochet',trait:'bank', color:'#2ec4b6',dark:'#1e8f85',light:'#6ce4d8',hp:5,speed:3.2,radius:15,bl:24,desc:'BOUNCES OFF WALLS',perk:'BANKED SHOTS HIT HARDER',pips:[4,3,3],unlock:{k:'kos', n:15,txt:'SCORE 15 KOs'}},
+ {name:'SLUGGER',tab:1,shape:'box',deco:'spikes',skin:'titan',   pilot:'slugger', gun:'slug',    trait:'heavy4',color:'#b5838d',dark:'#8a5a64',light:'#d4aab2',hp:5,speed:2.9,radius:15.5,bl:26,desc:'HEAVY SLUG RIFLE',perk:'EVERY 4TH SHELL IS HEAVY',pips:[2,4,4],unlock:{k:'wins',n:4,txt:'WIN 4 MATCHES'}},
+ {name:'RANGER', tab:1,shape:'long',deco:'stripe',skin:'longshot',pilot:'ranger',  gun:'burst',   trait:'none',  color:'#588157',dark:'#3e5d3d',light:'#8fb08e',hp:5,speed:3.2,radius:14.5,bl:26,desc:'MARKSMAN BURSTS',perk:'STEADY TRIPLE VOLLEYS',pips:[3,3,3],unlock:{k:'rounds',n:25,txt:'PLAY 25 ROUNDS'}},
+ {name:'JESTER', tab:1,shape:'round',deco:'checker',skin:'ricochet',pilot:'jester',  gun:'bounce3', trait:'bank',  color:'#f06fa8',dark:'#bc4a80',light:'#f8a6c9',hp:5,speed:3.1,radius:15,bl:22,desc:'TRIPLE-BOUNCE BALLS',perk:'BANKED SHOTS HIT HARDER',pips:[3,3,3],unlock:{k:'kos',n:40,txt:'SCORE 40 KOs'}},
+ {name:'TRICKSTER',tab:1,shape:'box',deco:'rack',skin:'phantom',pilot:'trickster',gun:'minegun',trait:'none', color:'#0f8b8d',dark:'#0a6163',light:'#4db3b5',hp:5,speed:3.1,radius:14.5,bl:20,desc:'LOBS PROXIMITY CHARGES',perk:'SPENT SHOTS BECOME MINES',pips:[3,3,3],unlock:{k:'campaign',n:6,txt:'CLEAR 6 CAMPAIGN STAGES'}},
  /* -------- HEAVY & TRICK -------- */
- {name:'TITAN',  tab:2,skin:'titan',   pilot:'titan',   gun:'shell',   trait:'brace', color:'#3d7ea6',dark:'#2a5f80',light:'#6fb0d8',hp:7,speed:2.4,radius:17,bl:24,desc:'HEAVY SHELL · 2 DMG',perk:'BARELY MOVED BY HITS',pips:[1,5,5],unlock:null},
- {name:'BOMBARD',tab:2,skin:'bombard', pilot:'bombard', gun:'mortar',  trait:'none',  color:'#8a9a2f',dark:'#66741f',light:'#c3d45e',hp:5,speed:2.7,radius:16,bl:16,desc:'LOBS OVER WALLS',perk:'HOLD FIRE TO AIM THE ARC',pips:[2,4,4],unlock:{k:'campaign',n:4,txt:'CLEAR 4 CAMPAIGN STAGES'}},
- {name:'PHANTOM',tab:2,skin:'phantom', pilot:'phantom', gun:'phase',   trait:'phase', color:'#8d99ae',dark:'#5f6b80',light:'#c3ccdd',hp:5,speed:3.3,radius:14.5,bl:24,desc:'2 DMG THROUGH WALLS',perk:'FIRING PHASES YOU BRIEFLY',pips:[3,3,4],unlock:{k:'campaign',n:9,txt:'CLEAR 9 CAMPAIGN STAGES'}},
- {name:'GOLIATH',tab:2,skin:'titan',   pilot:'goliath', gun:'cannon',  trait:'brace', color:'#5c677d',dark:'#414a5c',light:'#8b95aa',hp:9,speed:2.0,radius:18,bl:26,desc:'A ROLLING FORTRESS',perk:'9 HP AND BARELY MOVED BY HITS',pips:[1,5,3],unlock:{k:'wins',n:15,txt:'WIN 15 MATCHES'}},
- {name:'CLUSTER',tab:2,skin:'bombard', pilot:'cluster', gun:'cluster', trait:'none',  color:'#a3b18a',dark:'#78855f',light:'#c7d2b4',hp:5,speed:2.6,radius:16,bl:16,desc:'TWIN MORTAR SHELLS',perk:'HOLD FIRE TO AIM THE ARC',pips:[2,4,4],unlock:{k:'campaign',n:12,txt:'CLEAR 12 CAMPAIGN STAGES'}},
- {name:'WARDEN', tab:2,skin:'titan',   pilot:'warden',  gun:'minegun', trait:'brace', color:'#748cab',dark:'#526685',light:'#a3b3ca',hp:7,speed:2.3,radius:17,bl:22,desc:'AREA-DENIAL MINES',perk:'SPENT SHOTS BECOME MINES',pips:[1,5,3],unlock:{k:'rounds',n:60,txt:'PLAY 60 ROUNDS'}},
- {name:'RAILGUN',tab:2,skin:'longshot',pilot:'railgun', gun:'railgun', trait:'none',  color:'#d90429',dark:'#9d031e',light:'#f25e78',hp:4,speed:2.8,radius:15,bl:36,desc:'RAIL SLUG · 1-3 DMG',perk:'DEVASTATING AT EXTREME RANGE',pips:[2,2,5],unlock:{k:'kos',n:60,txt:'SCORE 60 KOs'}},
- {name:'INFERNO',tab:2,skin:'blaze',   pilot:'inferno', gun:'longflame',trait:'none', color:'#e85d04',dark:'#b04503',light:'#f58f4a',hp:6,speed:2.9,radius:15.5,bl:19,desc:'LONG-REACH FLAMES',perk:'FLAMES LEAVE BURNING GROUND',pips:[2,4,4],unlock:{k:'wins',n:20,txt:'WIN 20 MATCHES'}},
+ {name:'TITAN',  tab:2,shape:'box',deco:'plate',skin:'titan',   pilot:'titan',   gun:'shell',   trait:'brace', color:'#3d7ea6',dark:'#2a5f80',light:'#6fb0d8',hp:7,speed:2.4,radius:17,bl:24,desc:'HEAVY SHELL · 2 DMG',perk:'BARELY MOVED BY HITS',pips:[1,5,5],unlock:null},
+ {name:'BOMBARD',tab:2,shape:'box',deco:'sand',skin:'bombard', pilot:'bombard', gun:'mortar',  trait:'none',  color:'#8a9a2f',dark:'#66741f',light:'#c3d45e',hp:5,speed:2.7,radius:16,bl:16,desc:'LOBS OVER WALLS',perk:'HOLD FIRE TO AIM THE ARC',pips:[2,4,4],unlock:{k:'campaign',n:4,txt:'CLEAR 4 CAMPAIGN STAGES'}},
+ {name:'PHANTOM',tab:2,shape:'round',deco:'none',skin:'phantom', pilot:'phantom', gun:'phase',   trait:'phase', color:'#8d99ae',dark:'#5f6b80',light:'#c3ccdd',hp:5,speed:3.3,radius:14.5,bl:24,desc:'2 DMG THROUGH WALLS',perk:'FIRING PHASES YOU BRIEFLY',pips:[3,3,4],unlock:{k:'campaign',n:9,txt:'CLEAR 9 CAMPAIGN STAGES'}},
+ {name:'GOLIATH',tab:2,shape:'hex',deco:'plate',skin:'titan',   pilot:'goliath', gun:'cannon',  trait:'brace', color:'#5c677d',dark:'#414a5c',light:'#8b95aa',hp:9,speed:2.0,radius:18,bl:26,desc:'A ROLLING FORTRESS',perk:'9 HP AND BARELY MOVED BY HITS',pips:[1,5,3],unlock:{k:'wins',n:15,txt:'WIN 15 MATCHES'}},
+ {name:'CLUSTER',tab:2,shape:'box',deco:'rack',skin:'bombard', pilot:'cluster', gun:'cluster', trait:'none',  color:'#a3b18a',dark:'#78855f',light:'#c7d2b4',hp:5,speed:2.6,radius:16,bl:16,desc:'TWIN MORTAR SHELLS',perk:'HOLD FIRE TO AIM THE ARC',pips:[2,4,4],unlock:{k:'campaign',n:12,txt:'CLEAR 12 CAMPAIGN STAGES'}},
+ {name:'WARDEN', tab:2,shape:'box',deco:'drums',skin:'titan',   pilot:'warden',  gun:'minegun', trait:'brace', color:'#748cab',dark:'#526685',light:'#a3b3ca',hp:7,speed:2.3,radius:17,bl:22,desc:'AREA-DENIAL MINES',perk:'SPENT SHOTS BECOME MINES',pips:[1,5,3],unlock:{k:'rounds',n:60,txt:'PLAY 60 ROUNDS'}},
+ {name:'RAILGUN',tab:2,shape:'long',deco:'coil',skin:'longshot',pilot:'railgun', gun:'railgun', trait:'none',  color:'#d90429',dark:'#9d031e',light:'#f25e78',hp:4,speed:2.8,radius:15,bl:36,desc:'RAIL SLUG · 1-3 DMG',perk:'DEVASTATING AT EXTREME RANGE',pips:[2,2,5],unlock:{k:'kos',n:60,txt:'SCORE 60 KOs'}},
+ {name:'INFERNO',tab:2,shape:'box',deco:'drums',skin:'blaze',   pilot:'inferno', gun:'longflame',trait:'none', color:'#e85d04',dark:'#b04503',light:'#f58f4a',hp:6,speed:2.9,radius:15.5,bl:19,desc:'LONG-REACH FLAMES',perk:'FLAMES LEAVE BURNING GROUND',pips:[2,4,4],unlock:{k:'wins',n:20,txt:'WIN 20 MATCHES'}},
 ];
 
 /* ---------------- pilots: a drawn character per tank ----------------
@@ -325,8 +329,10 @@ const BACK_BTN={x:30,y:30,r:20};
 function inC(p,c){return Math.hypot(p.x-c.x,p.y-c.y)<c.r+8}
 function menuish(){return !['ready','play','round','game'].includes(state)}
 if(cv.addEventListener){
+let fsTried=false;
 cv.addEventListener('touchstart',e=>{
   e.preventDefault();audioOn();TOUCH.on=true;
+  if(!fsTried&&state==='title'){fsTried=true;if(!document.fullscreenElement)toggleFullscreen()}
   for(const t of e.changedTouches){
     const p=touchXY(t);
     if(inC(p,FS_BTN)){toggleFullscreen();continue}
@@ -2094,8 +2100,70 @@ function drawMarks(){
   cx.globalAlpha=1;
 }
 /* ---------------- tank drawing ---------------- */
+function drawDeco(c,hw,hh,r){
+  const d=c.deco||'none';
+  cx.lineWidth=2;
+  if(d==='stripe'){
+    cx.fillStyle='rgba(255,255,255,.7)';
+    cx.fillRect(-hw,-5.5,hw*2,3.6);cx.fillRect(-hw,2.4,hw*2,3.6);
+  }else if(d==='checker'){
+    for(let i=0;i<6;i++){cx.fillStyle=i%2?'rgba(255,255,255,.8)':'rgba(20,22,40,.55)';
+      cx.fillRect(-hw+ i*(hw*2/6),-4.5,hw*2/6,9)}
+  }else if(d==='star'){
+    cx.fillStyle='rgba(255,255,255,.75)';
+    cx.save();cx.translate(-hw*.45,0);cx.beginPath();
+    for(let i=0;i<10;i++){const rr2=i%2?2.4:5.5,a=i/10*Math.PI*2-Math.PI/2;cx.lineTo(Math.cos(a)*rr2,Math.sin(a)*rr2)}
+    cx.closePath();cx.fill();cx.restore();
+  }else if(d==='flame'){
+    cx.fillStyle='rgba(255,210,63,.8)';
+    for(const sy of [-hh*.55,hh*.55]){
+      cx.beginPath();cx.moveTo(-hw*.7,sy);cx.quadraticCurveTo(-hw*.2,sy-3,hw*.1,sy);
+      cx.quadraticCurveTo(-hw*.2,sy+3,-hw*.7,sy);cx.fill();
+    }
+  }else if(d==='bolt'){
+    cx.fillStyle='rgba(255,255,255,.85)';
+    cx.beginPath();cx.moveTo(3,-hh*.7);cx.lineTo(-4,-1);cx.lineTo(0,-1);
+    cx.lineTo(-3,hh*.7);cx.lineTo(4,1);cx.lineTo(0,1);cx.closePath();cx.fill();
+  }else if(d==='camo'){
+    cx.fillStyle='rgba(20,22,40,.25)';
+    for(const [bx,by,br2] of [[-hw*.5,-hh*.3,4.5],[hw*.2,hh*.35,5],[hw*.55,-hh*.4,3.5],[-hw*.1,0,4]]){
+      cx.beginPath();cx.ellipse(bx,by,br2*1.5,br2,.5,0,Math.PI*2);cx.fill();
+    }
+  }else if(d==='sand'){
+    cx.fillStyle='#d9c58f';cx.strokeStyle='rgba(20,22,40,.5)';
+    for(let i=-2;i<=2;i++){cx.beginPath();cx.ellipse(hw*.72,i*4.4,3,2,0,0,Math.PI*2);cx.fill();cx.stroke()}
+  }else if(d==='drums'){
+    for(const sy of [-4.5,4.5]){
+      cx.fillStyle='#8f5f2c';cx.beginPath();cx.arc(-hw*.68,sy,3.8,0,Math.PI*2);cx.fill();
+      cx.strokeStyle=INK;cx.stroke();
+    }
+  }else if(d==='rack'){
+    cx.fillStyle='rgba(20,22,40,.55)';
+    for(let i=-1;i<=1;i++){rr(cx,-hw*.8,i*5.4-2,5,4,1.5);cx.fill()}
+  }else if(d==='fin'){
+    cx.fillStyle=c.dark;cx.strokeStyle=INK;
+    cx.beginPath();cx.moveTo(-hw*.95,-hh*.5);cx.lineTo(-hw*.45,0);cx.lineTo(-hw*.95,hh*.5);cx.closePath();
+    cx.fill();cx.stroke();
+  }else if(d==='spikes'){
+    cx.fillStyle='#e8e3d0';cx.strokeStyle=INK;
+    for(let i=-1;i<=1;i++){
+      cx.beginPath();cx.moveTo(hw*.85,i*6-2.5);cx.lineTo(hw*1.25,i*6);cx.lineTo(hw*.85,i*6+2.5);cx.closePath();
+      cx.fill();cx.stroke();
+    }
+  }else if(d==='coil'){
+    cx.strokeStyle='rgba(255,255,255,.8)';cx.lineWidth=1.8;
+    for(let i=0;i<3;i++){cx.beginPath();cx.arc(-hw*.45,0,3+i*2.6,-.9,.9);cx.stroke()}
+  }else if(d==='plate'){
+    cx.strokeStyle='rgba(20,22,40,.45)';cx.lineWidth=2.4;
+    rr(cx,-hw*.55,-hh*.5,hw*1.1,hh,4);cx.stroke();
+    cx.fillStyle='rgba(20,22,40,.5)';
+    for(const [px,py] of [[-hw*.55,-hh*.5],[hw*.55,-hh*.5],[-hw*.55,hh*.5],[hw*.55,hh*.5]]){
+      cx.beginPath();cx.arc(px,py,1.6,0,Math.PI*2);cx.fill();
+    }
+  }
+}
 function drawTankBody(o){
-  const c=o.cls,r=c.radius*1.16,rec=Math.max(0,o.recoil||0),fx=o.fx;
+  const c=o.cls,r=c.radius*1.22,rec=Math.max(0,o.recoil||0),fx=o.fx;
   const ta=(o.tang==null?o.ang:o.tang);
   const ghost=fx&&fx.ghost>0;
   if(ghost)cx.globalAlpha=.45;
@@ -2109,29 +2177,59 @@ function drawTankBody(o){
   cx.fillStyle='rgba(20,22,40,.26)';
   cx.beginPath();cx.ellipse(o.x+3,o.y+6,r*1.2,r*.98,0,0,Math.PI*2);cx.fill();
   const sq=o.squash||0;
-  cx.save();cx.translate(o.x,o.y);
+  const shape=c.shape||'box',hover=shape==='hover';
+  const bob=hover?Math.sin(frame*.1+(o.team||0)*2)*2:0;
+  cx.save();cx.translate(o.x,o.y-bob);
   cx.scale(1+sq*.22,1-sq*.22);
   cx.rotate(o.ang);
   cx.lineWidth=3.4;cx.strokeStyle=INK;cx.lineJoin='round';
-  // treads with rolling notches
   const ph=((o.dist||0)*.9)%7;
-  for(const side of [-1,1]){
-    const ty=side<0?-r*1.18:r*.56;
-    const tg=cx.createLinearGradient(0,ty,0,ty+r*.62);
-    tg.addColorStop(0,c.dark);tg.addColorStop(1,'rgba(20,22,40,.85)');
-    cx.fillStyle=tg;rr(cx,-r*1.06,ty,r*2.12,r*.62,5);cx.fill();cx.stroke();
-    cx.save();cx.beginPath();rr(cx,-r*1.06,ty,r*2.12,r*.62,5);cx.clip();
-    cx.strokeStyle='rgba(255,255,255,.22)';cx.lineWidth=2.4;
-    for(let n=-r*1.2;n<r*1.2;n+=7){cx.beginPath();cx.moveTo(n+ph,ty);cx.lineTo(n+ph,ty+r*.62);cx.stroke()}
+  if(hover){
+    // no treads: an under-glow thruster ring
+    cx.save();cx.globalCompositeOperation='lighter';
+    cx.globalAlpha=.5+.2*Math.sin(frame*.2);
+    cx.fillStyle=c.color;cx.beginPath();cx.ellipse(0,0,r*1.25,r*1.05,0,0,Math.PI*2);cx.fill();
     cx.restore();
-    cx.strokeStyle=INK;cx.lineWidth=3.4;
+  }else{
+    const tl=shape==='long'?r*1.25:r*1.06,segs=shape==='hex'?2:1;
+    for(const side of [-1,1]){
+      const ty=side<0?-r*1.18:r*.56;
+      for(let sg=0;sg<segs;sg++){
+        const x0=-tl+sg*(tl*2/segs)+ (segs>1?2:0),w2=tl*2/segs-(segs>1?4:0);
+        const tg=cx.createLinearGradient(0,ty,0,ty+r*.62);
+        tg.addColorStop(0,c.dark);tg.addColorStop(1,'rgba(20,22,40,.85)');
+        cx.fillStyle=tg;rr(cx,x0,ty,w2,r*.62,5);cx.fill();cx.stroke();
+        cx.save();cx.beginPath();rr(cx,x0,ty,w2,r*.62,5);cx.clip();
+        cx.strokeStyle='rgba(255,255,255,.22)';cx.lineWidth=2.4;
+        for(let n=-tl*1.2;n<tl*1.2;n+=7){cx.beginPath();cx.moveTo(n+ph,ty);cx.lineTo(n+ph,ty+r*.62);cx.stroke()}
+        cx.restore();
+        cx.strokeStyle=INK;cx.lineWidth=3.4;
+      }
+    }
   }
-  // hull with a rounded gradient and a gloss band
+  // hull silhouette per shape
   const hg=cx.createLinearGradient(0,-r,0,r);
   hg.addColorStop(0,c.light||c.color);hg.addColorStop(.55,c.color);hg.addColorStop(1,c.dark);
-  cx.fillStyle=hg;rr(cx,-r,-r*.78,r*2,r*1.56,r*.42);cx.fill();cx.stroke();
-  cx.fillStyle='rgba(255,255,255,.28)';rr(cx,-r*.82,-r*.62,r*1.64,r*.44,r*.2);cx.fill();
-  cx.fillStyle='rgba(20,22,40,.16)';rr(cx,-r*.82,r*.2,r*1.64,r*.36,r*.16);cx.fill();
+  cx.fillStyle=hg;
+  const hw=shape==='long'?r*1.32:r*1.04,hh=r*.9;
+  cx.beginPath();
+  if(shape==='wedge'){
+    cx.moveTo(hw*1.35,0);cx.lineTo(hw*.35,-hh);cx.lineTo(-hw,-hh*.8);
+    cx.lineTo(-hw,hh*.8);cx.lineTo(hw*.35,hh);cx.closePath();
+  }else if(shape==='hex'){
+    cx.moveTo(hw*1.15,0);cx.lineTo(hw*.55,-hh);cx.lineTo(-hw*.55,-hh);
+    cx.lineTo(-hw*1.15,0);cx.lineTo(-hw*.55,hh);cx.lineTo(hw*.55,hh);cx.closePath();
+  }else if(shape==='round'||hover){
+    cx.ellipse(0,0,hw*1.08,hh*1.06,0,0,Math.PI*2);
+  }else{
+    rr(cx,-hw,-hh,hw*2,hh*2,r*.42);
+  }
+  cx.fill();cx.stroke();
+  cx.save();cx.clip();
+  cx.fillStyle='rgba(255,255,255,.28)';rr(cx,-hw*.9,-hh*.8,hw*1.8,hh*.56,r*.2);cx.fill();
+  cx.fillStyle='rgba(20,22,40,.16)';rr(cx,-hw*.9,hh*.26,hw*1.8,hh*.46,r*.16);cx.fill();
+  drawDeco(c,hw,hh,r);
+  cx.restore();
   cx.fillStyle=c.dark;rr(cx,-r-4,-4.5,6,9,2.5);cx.fill();cx.stroke(); // exhaust
   cx.strokeStyle='rgba(20,22,40,.28)';cx.lineWidth=1.6;
   cx.beginPath();cx.moveTo(-r*.4,-r*.74);cx.lineTo(-r*.4,r*.74);cx.moveTo(r*.45,-r*.74);cx.lineTo(r*.45,r*.74);cx.stroke();
@@ -2184,7 +2282,7 @@ function drawTankBody(o){
   }
   cx.restore();
   // turret ring + pilot, upright so the character always reads
-  const tr=r*.72;
+  const tr=r*.55;
   cx.save();cx.translate(o.x,o.y);cx.scale(1+sq*.18,1-sq*.18);
   cx.fillStyle=c.dark;cx.beginPath();cx.arc(0,0,tr+3,0,Math.PI*2);cx.fill();
   cx.lineWidth=3.2;cx.strokeStyle=INK;cx.stroke();
@@ -3035,6 +3133,15 @@ function netEnterSelect(){
   if(state==='online'){mode='online';enterSelect()}
 }
 setInterval(()=>{if(NET.ws&&NET.ws.readyState===1)netSend({t:'hb'})},20000);
+/* a quick-matcher stuck WAITING hops lobbies in case the room held a zombie */
+setInterval(()=>{
+  if(NET.quick&&NET.status==='WAITING'&&NET.connected&&!NET.peer){
+    NET.qslot=(NET.qslot+1)%6;
+    const nxt=NET.qslot===0?'PLAY':'PLAY'+(NET.qslot+1);
+    NET.code=nxt;netSend({t:'join',room:nxt,role:undefined});
+    netStatus('WAITING','looking for a player · lobby '+(NET.qslot+1));
+  }
+},20000);
 /* opened from a shared ?room= link: jump straight into that room */
 if(autoRoom){
   mode='online';state='online';NET.code=autoRoom;
