@@ -1,10 +1,16 @@
 /* ---------------- tank drawing ---------------- */
 function drawTankBody(o){
-  const c=o.cls,r=c.radius,rec=Math.max(0,o.recoil||0),fx=o.fx;
+  const c=o.cls,r=c.radius*1.16,rec=Math.max(0,o.recoil||0),fx=o.fx;
   const ta=(o.tang==null?o.ang:o.tang);
   const ghost=fx&&fx.ghost>0;
   if(ghost)cx.globalAlpha=.45;
-  // ground shadow
+  // team light pool, then the ground shadow
+  const ring0=o.teamColor||(o.team!==undefined?TEAMS[o.team].color:null);
+  if(ring0){
+    cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=.12;
+    cx.fillStyle=ring0;cx.beginPath();cx.ellipse(o.x,o.y+4,r*1.7,r*1.35,0,0,Math.PI*2);cx.fill();
+    cx.restore();
+  }
   cx.fillStyle='rgba(20,22,40,.26)';
   cx.beginPath();cx.ellipse(o.x+3,o.y+6,r*1.2,r*.98,0,0,Math.PI*2);cx.fill();
   const sq=o.squash||0;
@@ -173,8 +179,13 @@ function drawBullets(){
       cx.beginPath();cx.arc(b.x,b.y,b.r,0,Math.PI*2);cx.fill();cx.stroke();
       cx.globalAlpha=1;continue;
     }
-    cx.fillStyle=b.gun==='shell'?'#f4a259':b.gun==='ricochet'?'#7ae0c3':'#ffd166';
-    cx.strokeStyle=INK;cx.lineWidth=2.5;
+    const col=b.gun==='shell'?'#f4a259':b.gun==='ricochet'?(b.hot?'#ffffff':'#7ae0c3'):b.heavy?'#ff8c42':'#ffd166';
+    cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=.4;
+    cx.fillStyle=col;cx.beginPath();cx.arc(b.x,b.y,b.r+5,0,Math.PI*2);cx.fill();
+    cx.restore();
+    if(b.px||b.py){cx.strokeStyle=col;cx.globalAlpha=.35;cx.lineWidth=b.r;cx.lineCap='round';
+      cx.beginPath();cx.moveTo(b.px,b.py);cx.lineTo(b.x,b.y);cx.stroke();cx.globalAlpha=1}
+    cx.fillStyle=col;cx.strokeStyle=INK;cx.lineWidth=2.5;
     cx.beginPath();cx.arc(b.x,b.y,b.r,0,Math.PI*2);cx.fill();cx.stroke();
   }
 }
@@ -185,9 +196,60 @@ function drawArenaFrame(){
   drawCrates();
   drawMovers();
   drawMinesAndPickups();
-  for(const p of parts){cx.globalAlpha=Math.min(1,p.life/14);cx.fillStyle=p.color;cx.beginPath();cx.arc(p.x,p.y,p.size,0,Math.PI*2);cx.fill()}
+  for(const bn of burns){
+    const f=bn.life/90;
+    cx.save();cx.globalCompositeOperation='lighter';
+    cx.globalAlpha=.35*f+.1*Math.sin(frame*.4+bn.x);
+    cx.fillStyle='#ff8c42';cx.beginPath();cx.arc(bn.x,bn.y,11+Math.sin(frame*.3+bn.y)*2,0,Math.PI*2);cx.fill();
+    cx.globalAlpha=.5*f;cx.fillStyle='#ffd166';
+    cx.beginPath();cx.arc(bn.x,bn.y-2,6+Math.sin(frame*.5+bn.x)*1.5,0,Math.PI*2);cx.fill();
+    cx.restore();
+  }
+  for(const p of parts){
+    if(p.color==='smoke'){
+      cx.globalAlpha=Math.min(1,p.life/34)*.3;cx.fillStyle='#6b6f7d';
+      cx.beginPath();cx.arc(p.x,p.y,p.size+(34-p.life)*.18,0,Math.PI*2);cx.fill();
+    }else{
+      cx.globalAlpha=Math.min(1,p.life/14);cx.fillStyle=p.color;
+      cx.beginPath();cx.arc(p.x,p.y,p.size,0,Math.PI*2);cx.fill();
+    }
+  }
   cx.globalAlpha=1;
+  cx.save();cx.globalCompositeOperation='lighter';
+  for(const rg of rings){
+    cx.globalAlpha=rg.life/22*.7;cx.strokeStyle=rg.color;cx.lineWidth=rg.w*(rg.life/22)+1;
+    cx.beginPath();cx.arc(rg.x,rg.y,rg.r,0,Math.PI*2);cx.stroke();
+  }
+  cx.restore();cx.globalAlpha=1;
   drawBullets();
+  for(const t of tanks){
+    if(!(t.charge>0)||t.hp<=0)continue;
+    const ta=(t.tang==null?t.ang:t.tang),g=GUNS[t.cls.gun];
+    const lx=t.x+Math.cos(ta)*t.charge,ly=t.y+Math.sin(ta)*t.charge;
+    cx.save();
+    // dotted flight path that arcs like the shell will
+    cx.setLineDash([4,9]);cx.lineDashOffset=-frame*.9;
+    cx.strokeStyle=t.teamColor;cx.lineWidth=3.5;cx.globalAlpha=.9;
+    cx.beginPath();
+    const steps=14;
+    for(let k=0;k<=steps;k++){
+      const f=k/steps;
+      const px=t.x+Math.cos(ta)*t.charge*f,py=t.y+Math.sin(ta)*t.charge*f-Math.sin(f*Math.PI)*34;
+      k?cx.lineTo(px,py):cx.moveTo(px,py);
+    }
+    cx.stroke();cx.setLineDash([]);
+    // landing zone: pulsing blast ring + crosshair
+    const pulse=1+Math.sin(frame*.25)*.08;
+    cx.globalAlpha=.22;cx.fillStyle=t.teamColor;
+    cx.beginPath();cx.arc(lx,ly,g.aoe*pulse,0,Math.PI*2);cx.fill();
+    cx.globalAlpha=.95;cx.lineWidth=3;cx.strokeStyle=t.teamColor;
+    cx.beginPath();cx.arc(lx,ly,g.aoe*pulse,0,Math.PI*2);cx.stroke();
+    cx.lineWidth=2.5;
+    cx.beginPath();cx.moveTo(lx-9,ly);cx.lineTo(lx+9,ly);cx.moveTo(lx,ly-9);cx.lineTo(lx,ly+9);cx.stroke();
+    cx.strokeStyle=INK;cx.globalAlpha=.5;cx.lineWidth=1.5;
+    cx.beginPath();cx.arc(lx,ly,g.aoe*pulse+2,0,Math.PI*2);cx.stroke();
+    cx.restore();
+  }
   tanks.forEach(drawTank);
   for(const t of tanks){
     if(!(t.lock>14)||t.ai)continue;

@@ -49,12 +49,12 @@ function stepSelect(){
   for(let p=0;p<n;p++){
     const k=KEYMAP[p],s=sel[p],pr=prof(p);
     if(!s.locked){
-      let col=s.i%3,row=(s.i/3)|0,moved=false;
-      if(pressQ.has(k.left)){col=(col+2)%3;moved=true}
-      if(pressQ.has(k.right)){col=(col+1)%3;moved=true}
+      let col=s.i%8,row=(s.i/8)|0,moved=false;
+      if(pressQ.has(k.left)){col=(col+7)%8;moved=true}
+      if(pressQ.has(k.right)){col=(col+1)%8;moved=true}
       if(pressQ.has(k.up)){row=(row+2)%3;moved=true}
       if(pressQ.has(k.down)){row=(row+1)%3;moved=true}
-      if(moved){s.i=row*3+col;sTick()}
+      if(moved){s.i=row*8+col;sTick()}
       if(pressQ.has(k.fire)){
         if(isUnlocked(s.i,pr)){s.locked=true;sLock();if(onLockIn)onLockIn(p)}
         else{toast={txt:'LOCKED · '+CLASSES[s.i].unlock.txt,life:150};sBack()}

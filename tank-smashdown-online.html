@@ -1,9 +1,13 @@
 <title>Tank Smashdown</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <style>
   html,body{height:100%}
-  body{margin:0;background:#0f1220;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  body{margin:0;background:#0f1220;display:flex;align-items:center;justify-content:center;overflow:hidden;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
   .wrap{width:min(100vw,160vh * .96);padding:12px;box-sizing:border-box}
-  canvas{display:block;width:100%;height:auto;border-radius:14px;box-shadow:0 18px 70px rgba(0,0,0,.6)}
+  canvas{display:block;width:100%;height:auto;border-radius:14px;box-shadow:0 18px 70px rgba(0,0,0,.6);
+    touch-action:none;-webkit-user-select:none;user-select:none}
+  @media (max-width:700px){.wrap{padding:2px}canvas{border-radius:6px}}
   .wrap:fullscreen{display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:0;background:#0f1220}
   .wrap:fullscreen canvas{width:min(100vw,160vh);height:auto;border-radius:0;box-shadow:none}
 </style>
@@ -20,25 +24,55 @@ const SWATCHES=['#ef3e4a','#ff8c42','#ffd23f','#35a44a','#2ec4b6','#3d7ea6','#a0
 /* ---------------- guns & tank classes ---------------- */
 const GUNS={
   rapid:   {cd:9,maxLive:5,dmg:1,spd:8.8,br:4,jitter:.09,knock:6,range:360},
+  gatling: {cd:7,maxLive:7,dmg:1,spd:9.2,br:3.5,jitter:.13,knock:4,range:330},
+  twin:    {cd:18,maxLive:4,dmg:1,spd:8,br:4.5,pellets:2,spread:.11,knock:7,range:400},
+  burst:   {cd:31,maxLive:6,dmg:1,spd:8,br:4,pellets:3,spread:.055,knock:6,range:360},
   cannon:  {cd:28,maxLive:3,dmg:1,spd:7.3,br:5,knock:9,range:420},
+  slug:    {cd:46,maxLive:2,dmg:2,spd:8.8,br:6,knock:12,range:460},
   shell:   {cd:42,maxLive:2,dmg:2,spd:6,br:8,knock:15,range:400},
-  sniper:  {cd:48,maxLive:1,dmg:2,spd:13,br:4.5,knock:12,trail:1,range:700},
+  sniper:  {cd:48,maxLive:1,dmg:2,spd:13,br:4.5,knock:12,trail:1,range:700,falloff:1},
+  railgun: {cd:74,maxLive:1,dmg:2,spd:15.5,br:5,knock:16,trail:1,range:780,falloff:1},
   scatter: {cd:28,maxLive:12,dmg:1,spd:7.6,br:5,pellets:4,spread:.26,life:30,knock:8,range:230},
+  blunder: {cd:32,maxLive:18,dmg:1,spd:9.2,br:5.5,pellets:6,spread:.34,life:30,knock:11,range:280},
   ricochet:{cd:31,maxLive:2,dmg:1,spd:6.8,br:5,bounces:2,knock:9,range:420},
+  bounce3: {cd:36,maxLive:2,dmg:1,spd:6.4,br:5.5,bounces:3,knock:9,range:470},
   mortar:  {cd:86,maxLive:1,dmg:2,spd:6,br:7,air:1,life:50,aoe:38,knock:12,range:400,minR:90,fuseErr:150},
-  flame:   {cd:4,maxLive:14,dmg:1,spd:7,br:4.5,jitter:.26,life:20,knock:2,range:155},
-  phase:   {cd:44,maxLive:1,dmg:2,spd:6.6,br:5.5,phase:1,knock:10,range:520},
+  cluster: {cd:88,maxLive:2,dmg:1,spd:6,br:5.5,air:1,life:50,aoe:40,knock:10,range:390,minR:90,fuseErr:110,pellets:2,spread:.13},
+  flame:   {cd:4,maxLive:14,dmg:1,spd:7,br:4.5,jitter:.26,life:20,knock:2,range:155,burn:1},
+  longflame:{cd:6,maxLive:14,dmg:1,spd:8,br:3.5,jitter:.13,life:20,knock:2,range:170,burn:1},
+  phase:   {cd:50,maxLive:1,dmg:2,spd:6.2,br:5.5,phase:1,knock:10,range:500},
+  phasefast:{cd:30,maxLive:2,dmg:1,spd:7.2,br:4.5,phase:1,knock:7,range:430},
+  minegun: {cd:26,maxLive:4,dmg:1,spd:8,br:6,life:44,knock:8,range:350,mine:1},
 };
+const TABS=['SPEED','BALANCED','HEAVY & TRICK'];
 const CLASSES=[
-  {name:'SCOUT',   skin:'scout',   gun:'rapid',   color:'#ffd23f',dark:'#cba317',light:'#ffe89a',hp:4,speed:3.9,radius:14,  bl:20,desc:'TWIN RAPID GUNS',     pips:[5,2,2],perk:'GUN SPINS UP AS YOU HOLD FIRE',unlock:null},
-  {name:'BRAWLER', skin:'brawler', gun:'cannon',  color:'#ef3e4a',dark:'#b3202c',light:'#ff7d85',hp:5,speed:3.1,radius:15,  bl:26,desc:'BALANCED CANNON',     pips:[3,3,3],perk:'EVERY 4TH SHELL IS HEAVY',unlock:null},
-  {name:'TITAN',   skin:'titan',   gun:'shell',   color:'#3d7ea6',dark:'#2a5f80',light:'#6fb0d8',hp:7,speed:2.4,radius:17,  bl:24,desc:'HEAVY SHELL · 2 DMG', pips:[1,5,5],perk:'BARELY MOVED BY HITS',unlock:null},
-  {name:'LONGSHOT',skin:'longshot',gun:'sniper',  color:'#35a44a',dark:'#1f7c32',light:'#6cd07e',hp:4,speed:3.3,radius:14,  bl:34,desc:'SNIPER · 1-3 DMG BY RANGE',pips:[3,2,4],perk:'DAMAGE GROWS WITH DISTANCE',unlock:null},
-  {name:'SCATTER', skin:'scatter', gun:'scatter', color:'#ff8c42',dark:'#d3652a',light:'#ffb27a',hp:5,speed:3.0,radius:15,  bl:18,desc:'TRIPLE SPREAD SHOT',  pips:[3,3,4],perk:'STAND STILL FOR A TIGHT SPREAD',unlock:{k:'wins',n:2, txt:'WIN 2 MATCHES'}},
-  {name:'RICOCHET',skin:'ricochet',gun:'ricochet',color:'#2ec4b6',dark:'#1e8f85',light:'#6ce4d8',hp:5,speed:3.2,radius:15,  bl:24,desc:'BOUNCES OFF WALLS',   pips:[4,3,3],perk:'BOUNCED SHOTS HIT HARDER',unlock:{k:'kos', n:15,txt:'SCORE 15 KOs'}},
-  {name:'BOMBARD', skin:'bombard', gun:'mortar',  color:'#8a9a2f',dark:'#66741f',light:'#c3d45e',hp:5,speed:2.7,radius:16,  bl:16,desc:'LOBS OVER WALLS',     pips:[2,4,4],perk:'HOLD FIRE TO AIM THE ARC, RELEASE TO LOB',unlock:{k:'campaign',n:4,txt:'CLEAR 4 CAMPAIGN STAGES'}},
-  {name:'BLAZE',   skin:'blaze',   gun:'flame',   color:'#d95d39',dark:'#a83f22',light:'#f28f6e',hp:5,speed:3.4,radius:14.5,bl:18,desc:'SHORT RANGE FLAME',   pips:[4,3,3],perk:'FLAMES LEAVE BURNING GROUND',unlock:{k:'wins',n:6, txt:'WIN 6 MATCHES'}},
-  {name:'PHANTOM', skin:'phantom', gun:'phase',   color:'#8d99ae',dark:'#5f6b80',light:'#c3ccdd',hp:5,speed:3.3,radius:14.5,bl:24,desc:'2 DMG THROUGH WALLS',pips:[3,3,4],perk:'EACH SHOT PHASES YOU THROUGH WALLS',unlock:{k:'campaign',n:9,txt:'CLEAR 9 CAMPAIGN STAGES'}},
+ /* -------- SPEED -------- */
+ {name:'SCOUT',  tab:0,skin:'scout',   pilot:'scout',   gun:'rapid',   trait:'spinup',color:'#ffd23f',dark:'#cba317',light:'#ffe89a',hp:4,speed:3.9,radius:14,bl:20,desc:'TWIN RAPID GUNS',perk:'GUN SPINS UP AS YOU HOLD FIRE',pips:[5,2,2],unlock:null},
+ {name:'DART',   tab:0,skin:'scout',   pilot:'dart',    gun:'twin',    trait:'none',  color:'#8ac926',dark:'#5f9418',light:'#b9e769',hp:4,speed:4.2,radius:13,bl:19,desc:'DOUBLE PEASHOOTER',perk:'FASTEST TREADS IN THE GAME',pips:[5,1,2],unlock:null},
+ {name:'SURGE',  tab:0,skin:'blaze',   pilot:'surge',   gun:'burst',   trait:'none',  color:'#4cc9f0',dark:'#2a93b8',light:'#8adcf5',hp:4,speed:3.8,radius:14,bl:21,desc:'3-ROUND BURST',perk:'TIGHT TRIPLE TAP, NO SPREAD',pips:[4,2,3],unlock:null},
+ {name:'VIPER',  tab:0,skin:'ricochet',pilot:'viper',   gun:'gatling', trait:'none',  color:'#80b918',dark:'#5a8310',light:'#b5dd5e',hp:4,speed:3.7,radius:14,bl:22,desc:'BUZZSAW GATLING',perk:'SPRAYS FASTER THAN ANYTHING',pips:[4,2,3],unlock:null},
+ {name:'BLAZE',  tab:0,skin:'blaze',   pilot:'blaze',   gun:'flame',   trait:'none',  color:'#d95d39',dark:'#a83f22',light:'#f28f6e',hp:5,speed:3.4,radius:14.5,bl:18,desc:'SHORT RANGE FLAME',perk:'FLAMES LEAVE BURNING GROUND',pips:[4,3,3],unlock:{k:'wins',n:6, txt:'WIN 6 MATCHES'}},
+ {name:'WISP',   tab:0,skin:'phantom', pilot:'wisp',    gun:'phasefast',trait:'phase',color:'#bde0fe',dark:'#7fa8cc',light:'#e2f1ff',hp:4,speed:3.8,radius:13.5,bl:22,desc:'QUICK GHOST BOLTS',perk:'FIRING PHASES YOU BRIEFLY',pips:[5,1,2],unlock:{k:'kos',n:25,txt:'SCORE 25 KOs'}},
+ {name:'JACKAL', tab:0,skin:'scatter', pilot:'jackal',  gun:'blunder', trait:'still', color:'#e0a458',dark:'#b07830',light:'#f0c791',hp:5,speed:3.6,radius:14,bl:17,desc:'5-PELLET BLUNDERBUSS',perk:'STAND STILL FOR A TIGHT SPREAD',pips:[4,2,4],unlock:{k:'rounds',n:40,txt:'PLAY 40 ROUNDS'}},
+ {name:'COMET',  tab:0,skin:'longshot',pilot:'comet',   gun:'slug',    trait:'none',  color:'#90e0ef',dark:'#5aa8b8',light:'#c1eef7',hp:4,speed:3.6,radius:13.5,bl:28,desc:'FAST HEAVY SLUG',perk:'HITS LIKE A TRUCK AT ANY RANGE',pips:[4,1,4],unlock:{k:'wins',n:10,txt:'WIN 10 MATCHES'}},
+ /* -------- BALANCED -------- */
+ {name:'BRAWLER',tab:1,skin:'brawler', pilot:'brawler', gun:'cannon',  trait:'heavy4',color:'#ef3e4a',dark:'#b3202c',light:'#ff7d85',hp:5,speed:3.1,radius:15,bl:26,desc:'BALANCED CANNON',perk:'EVERY 4TH SHELL IS HEAVY',pips:[3,3,3],unlock:null},
+ {name:'LONGSHOT',tab:1,skin:'longshot',pilot:'longshot',gun:'sniper', trait:'none',  color:'#35a44a',dark:'#1f7c32',light:'#6cd07e',hp:4,speed:3.3,radius:14,bl:34,desc:'SNIPER · 1-3 DMG BY RANGE',perk:'DAMAGE GROWS WITH DISTANCE',pips:[3,2,4],unlock:null},
+ {name:'SCATTER',tab:1,skin:'scatter', pilot:'scatter', gun:'scatter', trait:'still', color:'#ff8c42',dark:'#d3652a',light:'#ffb27a',hp:5,speed:3.0,radius:15,bl:18,desc:'QUAD SPREAD SHOT',perk:'STAND STILL FOR A TIGHT SPREAD',pips:[3,3,4],unlock:{k:'wins',n:2, txt:'WIN 2 MATCHES'}},
+ {name:'RICOCHET',tab:1,skin:'ricochet',pilot:'ricochet',gun:'ricochet',trait:'bank', color:'#2ec4b6',dark:'#1e8f85',light:'#6ce4d8',hp:5,speed:3.2,radius:15,bl:24,desc:'BOUNCES OFF WALLS',perk:'BANKED SHOTS HIT HARDER',pips:[4,3,3],unlock:{k:'kos', n:15,txt:'SCORE 15 KOs'}},
+ {name:'SLUGGER',tab:1,skin:'titan',   pilot:'slugger', gun:'slug',    trait:'heavy4',color:'#b5838d',dark:'#8a5a64',light:'#d4aab2',hp:5,speed:2.9,radius:15.5,bl:26,desc:'HEAVY SLUG RIFLE',perk:'EVERY 4TH SHELL IS HEAVY',pips:[2,4,4],unlock:{k:'wins',n:4,txt:'WIN 4 MATCHES'}},
+ {name:'RANGER', tab:1,skin:'longshot',pilot:'ranger',  gun:'burst',   trait:'none',  color:'#588157',dark:'#3e5d3d',light:'#8fb08e',hp:5,speed:3.2,radius:14.5,bl:26,desc:'MARKSMAN BURSTS',perk:'STEADY TRIPLE VOLLEYS',pips:[3,3,3],unlock:{k:'rounds',n:25,txt:'PLAY 25 ROUNDS'}},
+ {name:'JESTER', tab:1,skin:'ricochet',pilot:'jester',  gun:'bounce3', trait:'bank',  color:'#f06fa8',dark:'#bc4a80',light:'#f8a6c9',hp:5,speed:3.1,radius:15,bl:22,desc:'TRIPLE-BOUNCE BALLS',perk:'BANKED SHOTS HIT HARDER',pips:[3,3,3],unlock:{k:'kos',n:40,txt:'SCORE 40 KOs'}},
+ {name:'TRICKSTER',tab:1,skin:'phantom',pilot:'trickster',gun:'minegun',trait:'none', color:'#0f8b8d',dark:'#0a6163',light:'#4db3b5',hp:5,speed:3.1,radius:14.5,bl:20,desc:'LOBS PROXIMITY CHARGES',perk:'SPENT SHOTS BECOME MINES',pips:[3,3,3],unlock:{k:'campaign',n:6,txt:'CLEAR 6 CAMPAIGN STAGES'}},
+ /* -------- HEAVY & TRICK -------- */
+ {name:'TITAN',  tab:2,skin:'titan',   pilot:'titan',   gun:'shell',   trait:'brace', color:'#3d7ea6',dark:'#2a5f80',light:'#6fb0d8',hp:7,speed:2.4,radius:17,bl:24,desc:'HEAVY SHELL · 2 DMG',perk:'BARELY MOVED BY HITS',pips:[1,5,5],unlock:null},
+ {name:'BOMBARD',tab:2,skin:'bombard', pilot:'bombard', gun:'mortar',  trait:'none',  color:'#8a9a2f',dark:'#66741f',light:'#c3d45e',hp:5,speed:2.7,radius:16,bl:16,desc:'LOBS OVER WALLS',perk:'HOLD FIRE TO AIM THE ARC',pips:[2,4,4],unlock:{k:'campaign',n:4,txt:'CLEAR 4 CAMPAIGN STAGES'}},
+ {name:'PHANTOM',tab:2,skin:'phantom', pilot:'phantom', gun:'phase',   trait:'phase', color:'#8d99ae',dark:'#5f6b80',light:'#c3ccdd',hp:5,speed:3.3,radius:14.5,bl:24,desc:'2 DMG THROUGH WALLS',perk:'FIRING PHASES YOU BRIEFLY',pips:[3,3,4],unlock:{k:'campaign',n:9,txt:'CLEAR 9 CAMPAIGN STAGES'}},
+ {name:'GOLIATH',tab:2,skin:'titan',   pilot:'goliath', gun:'cannon',  trait:'brace', color:'#5c677d',dark:'#414a5c',light:'#8b95aa',hp:9,speed:2.0,radius:18,bl:26,desc:'A ROLLING FORTRESS',perk:'9 HP AND BARELY MOVED BY HITS',pips:[1,5,3],unlock:{k:'wins',n:15,txt:'WIN 15 MATCHES'}},
+ {name:'CLUSTER',tab:2,skin:'bombard', pilot:'cluster', gun:'cluster', trait:'none',  color:'#a3b18a',dark:'#78855f',light:'#c7d2b4',hp:5,speed:2.6,radius:16,bl:16,desc:'TWIN MORTAR SHELLS',perk:'HOLD FIRE TO AIM THE ARC',pips:[2,4,4],unlock:{k:'campaign',n:12,txt:'CLEAR 12 CAMPAIGN STAGES'}},
+ {name:'WARDEN', tab:2,skin:'titan',   pilot:'warden',  gun:'minegun', trait:'brace', color:'#748cab',dark:'#526685',light:'#a3b3ca',hp:7,speed:2.3,radius:17,bl:22,desc:'AREA-DENIAL MINES',perk:'SPENT SHOTS BECOME MINES',pips:[1,5,3],unlock:{k:'rounds',n:60,txt:'PLAY 60 ROUNDS'}},
+ {name:'RAILGUN',tab:2,skin:'longshot',pilot:'railgun', gun:'railgun', trait:'none',  color:'#d90429',dark:'#9d031e',light:'#f25e78',hp:4,speed:2.8,radius:15,bl:36,desc:'RAIL SLUG · 1-3 DMG',perk:'DEVASTATING AT EXTREME RANGE',pips:[2,2,5],unlock:{k:'kos',n:60,txt:'SCORE 60 KOs'}},
+ {name:'INFERNO',tab:2,skin:'blaze',   pilot:'inferno', gun:'longflame',trait:'none', color:'#e85d04',dark:'#b04503',light:'#f58f4a',hp:6,speed:2.9,radius:15.5,bl:19,desc:'LONG-REACH FLAMES',perk:'FLAMES LEAVE BURNING GROUND',pips:[2,4,4],unlock:{k:'wins',n:20,txt:'WIN 20 MATCHES'}},
 ];
 
 /* ---------------- pilots: a drawn character per tank ----------------
@@ -52,7 +86,22 @@ const PILOTS={
   ricochet:{skin:'#ffd9a8',gear:'headset',gearA:'#2ec4b6',gearB:'#1e8f85',eyes:'normal',mouth:'smirk',  hair:'#6b4a8f'},
   bombard: {skin:'#c98f63',gear:'helmet', gearA:'#8a9a2f',gearB:'#66741f',eyes:'squint',mouth:'grin',   hair:'#2b2b1c'},
   blaze:   {skin:'#e8b98a',gear:'goggles',gearA:'#d95d39',gearB:'#a83f22',eyes:'sharp', mouth:'fangs',  hair:'#8f2b12'},
-  phantom: {skin:'#cfd6e6',gear:'hood',   gearA:'#8d99ae',gearB:'#5f6b80',eyes:'glow',  mouth:'none',   hair:'#43506b'},
+  phantom: {skin:'#e9edf7',gear:'hood',   gearA:'#4a5670',gearB:'#39435c',eyes:'glow',  mouth:'smirk',  hair:'#39435c'},
+  dart:    {skin:'#f0c093',gear:'bandana',gearA:'#8ac926',gearB:'#5f9418',eyes:'wide',  mouth:'grin',  hair:'#2b2b1c'},
+  surge:   {skin:'#ffd9a8',gear:'headset',gearA:'#4cc9f0',gearB:'#2a93b8',eyes:'sharp', mouth:'smirk', hair:'#1f7a99'},
+  viper:   {skin:'#d9a072',gear:'goggles',gearA:'#80b918',gearB:'#5a8310',eyes:'squint',mouth:'fangs', hair:'#31450a'},
+  wisp:    {skin:'#eef2ff',gear:'hood',   gearA:'#7fa8cc',gearB:'#5c7ea3',eyes:'glow',  mouth:'none',  hair:'#5c7ea3'},
+  jackal:  {skin:'#c98f63',gear:'bandana',gearA:'#e0a458',gearB:'#b07830',eyes:'sharp', mouth:'fangs', hair:'#4a2c14'},
+  comet:   {skin:'#ffe0c0',gear:'visor',  gearA:'#90e0ef',gearB:'#5aa8b8',eyes:'wide',  mouth:'grin',  hair:'#d8d8d8'},
+  slugger: {skin:'#e8b98a',gear:'cap',    gearA:'#b5838d',gearB:'#8a5a64',eyes:'squint',mouth:'flat',  hair:'#3b2413'},
+  ranger:  {skin:'#d9a072',gear:'cap',    gearA:'#588157',gearB:'#3e5d3d',eyes:'sharp', mouth:'flat',  hair:'#241a12'},
+  jester:  {skin:'#ffd9a8',gear:'headset',gearA:'#f06fa8',gearB:'#bc4a80',eyes:'wide',  mouth:'grin',  hair:'#bc4a80'},
+  trickster:{skin:'#e8b98a',gear:'goggles',gearA:'#0f8b8d',gearB:'#0a6163',eyes:'normal',mouth:'smirk',hair:'#123'},
+  goliath: {skin:'#c98f63',gear:'helmet', gearA:'#5c677d',gearB:'#414a5c',eyes:'squint',mouth:'flat',  hair:'#241a12'},
+  cluster: {skin:'#ffd9a8',gear:'helmet', gearA:'#a3b18a',gearB:'#78855f',eyes:'normal',mouth:'grin',  hair:'#5a4632'},
+  warden:  {skin:'#d9a072',gear:'visor',  gearA:'#748cab',gearB:'#526685',eyes:'sharp', mouth:'flat',  hair:'#2f3b4c'},
+  railgun: {skin:'#e8b98a',gear:'visor',  gearA:'#d90429',gearB:'#9d031e',eyes:'sharp', mouth:'smirk', hair:'#3b0a12'},
+  inferno: {skin:'#c98f63',gear:'goggles',gearA:'#e85d04',gearB:'#b04503',eyes:'glow',  mouth:'fangs', hair:'#611f00'},
 };
 
 /* ---------------- powerups ---------------- */
@@ -137,7 +186,14 @@ const SND={
   scatter:()=>sfx(300,90,.14,'sawtooth',.09), ricochet:()=>sfx(420,160,.11,'square',.07),
   mortar:()=>sfx(140,320,.25,'triangle',.11), flame:()=>sfx(160,90,.06,'sawtooth',.03),
   phase:()=>sfx(880,220,.25,'sine',.08),
+  gatling:()=>sfx(560,240,.06,'square',.05), twin:()=>sfx(400,150,.1,'square',.07),
+  burst:()=>sfx(460,190,.09,'square',.07), slug:()=>sfx(250,80,.16,'square',.1),
+  railgun:()=>sfx(950,120,.2,'sawtooth',.11), blunder:()=>sfx(260,70,.16,'sawtooth',.1),
+  bounce3:()=>sfx(420,160,.11,'square',.07), cluster:()=>sfx(150,340,.22,'triangle',.1),
+  longflame:()=>sfx(180,100,.06,'sawtooth',.03), phasefast:()=>sfx(760,260,.18,'sine',.07),
+  minegun:()=>sfx(320,120,.14,'triangle',.09),
 };
+const sndFor=g=>(SND[g]||SND.cannon);
 const sHit=()=>sfx(160,60,.18,'sawtooth',.14), sKO=()=>sfx(500,40,.5,'sawtooth',.18);
 const sGo=()=>sfx(660,660,.15,'square',.12), sTick=()=>sfx(440,440,.1,'square',.08);
 const sStar=()=>sfx(880,1320,.2,'triangle',.1), sBounce=()=>sfx(520,300,.08,'square',.06);
@@ -254,6 +310,58 @@ function toggleFullscreen(){
   }catch(e){}
 }
 if(cv.addEventListener)cv.addEventListener('dblclick',toggleFullscreen);
+/* ---------------- touch: pop-up joystick + fire button ----------------
+   The stick appears wherever the thumb lands and vanishes on release.
+   In menus a tap = confirm and a flick = move the cursor. */
+const TOUCH={on:false,jid:null,ax:0,ay:0,dx:0,dy:0,fid:null,fire:false,t0:0,sx:0,sy:0};
+function touchXY(t){const r=cv.getBoundingClientRect();return{x:(t.clientX-r.left)/r.width*W,y:(t.clientY-r.top)/r.height*H}}
+const FIRE_BTN={x:W-78,y:H-160,r:46};
+const FS_BTN={x:W-30,y:30,r:20};
+const BACK_BTN={x:30,y:30,r:20};
+function inC(p,c){return Math.hypot(p.x-c.x,p.y-c.y)<c.r+8}
+function menuish(){return !['ready','play','round','game'].includes(state)}
+if(cv.addEventListener){
+cv.addEventListener('touchstart',e=>{
+  e.preventDefault();audioOn();TOUCH.on=true;
+  for(const t of e.changedTouches){
+    const p=touchXY(t);
+    if(inC(p,FS_BTN)){toggleFullscreen();continue}
+    if(inC(p,BACK_BTN)&&menuish()){pressQ.add('Escape');continue}
+    if(!menuish()&&inC(p,FIRE_BTN)&&TOUCH.fid===null){TOUCH.fid=t.identifier;TOUCH.fire=true;continue}
+    if(TOUCH.jid===null){
+      TOUCH.jid=t.identifier;TOUCH.ax=p.x;TOUCH.ay=p.y;TOUCH.dx=0;TOUCH.dy=0;
+      TOUCH.t0=performance.now();TOUCH.sx=p.x;TOUCH.sy=p.y;
+    }
+  }
+},{passive:false});
+cv.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  for(const t of e.changedTouches){
+    if(t.identifier!==TOUCH.jid)continue;
+    const p=touchXY(t);
+    let dx=p.x-TOUCH.ax,dy=p.y-TOUCH.ay;
+    const d=Math.hypot(dx,dy);
+    if(d>52){dx=dx/d*52;dy=dy/d*52;TOUCH.ax=p.x-dx;TOUCH.ay=p.y-dy} // the base follows a long drag
+    TOUCH.dx=dx;TOUCH.dy=dy;
+  }
+},{passive:false});
+const touchEnd=e=>{
+  e.preventDefault();
+  for(const t of e.changedTouches){
+    if(t.identifier===TOUCH.fid){TOUCH.fid=null;TOUCH.fire=false}
+    if(t.identifier===TOUCH.jid){
+      if(menuish()){
+        const p=touchXY(t),mx=p.x-TOUCH.sx,my=p.y-TOUCH.sy,md=Math.hypot(mx,my);
+        if(performance.now()-TOUCH.t0<450&&md<16)pressQ.add('Space');
+        else if(md>=26)pressQ.add(Math.abs(mx)>Math.abs(my)?(mx>0?'KeyD':'KeyA'):(my>0?'KeyS':'KeyW'));
+      }
+      TOUCH.jid=null;TOUCH.dx=0;TOUCH.dy=0;
+    }
+  }
+};
+cv.addEventListener('touchend',touchEnd,{passive:false});
+cv.addEventListener('touchcancel',touchEnd,{passive:false});
+}
 const keys={},pressQ=new Set();
 let typeBuf='';
 addEventListener('keydown',e=>{
@@ -671,8 +779,8 @@ function drawFace(p,r,mood,lookX,lookY,blink){
     rr(cx,-21,-3,7,11,3);cx.fill();cx.stroke();rr(cx,14,-3,7,11,3);cx.fill();cx.stroke();
   }else if(p.gear==='hood'){
     cx.fillStyle=p.gearA;
-    cx.beginPath();cx.arc(0,0,19,Math.PI*.92,Math.PI*2.08);cx.fill();cx.stroke();
-    cx.fillStyle='rgba(34,35,59,.25)';cx.beginPath();cx.arc(0,-1,16,Math.PI,0);cx.fill();
+    cx.beginPath();cx.arc(0,-2,18,Math.PI*1.02,Math.PI*1.98);cx.fill();cx.stroke();
+    cx.fillStyle=p.gearB;rr(cx,-17,-7,34,5,2.5);cx.fill();cx.stroke();
   }
   cx.restore();
 }
@@ -994,17 +1102,17 @@ function finishMatch(winner){
 
 /* ---------------- firing ---------------- */
 function fire(t,chargeDist){
-  const g=GUNS[t.cls.gun],fx=t.fx,skin=t.cls.skin;
+  const g=GUNS[t.cls.gun],fx=t.fx,skin=t.cls.trait;
   const maxLive=g.maxLive+(fx.triple>0?2:0);
   if(t.cd>0||t.fx.frozen>0||bullets.filter(b=>b.owner===t).length>=maxLive)return;
   let n=g.pellets||1,spread=g.spread||0;
   if(fx.triple>0){n=Math.max(3,n);spread=Math.max(.22,spread)}
   // SCATTER perk: hold your ground for a marksman's spread
-  if(skin==='scatter')spread=Math.hypot(t.mvx,t.mvy)>1.2?.3:.12;
+  if(skin==='still')spread=Math.hypot(t.mvx,t.mvy)>1.2?spread*1.2:.1;
   let dmg=g.dmg+(fx.big>0?1:0),br=g.br+(fx.big>0?3:0),knock=g.knock+(fx.big>0?4:0);
   // BRAWLER perk: every third shell is a heavy one
   let heavy=false;
-  if(skin==='brawler'){t.shots=(t.shots||0)+1;if(t.shots%4===0){heavy=true;dmg+=1;br+=3;knock+=5}}
+  if(skin==='heavy4'){t.shots=(t.shots||0)+1;if(t.shots%4===0){heavy=true;dmg+=1;br+=3;knock+=5}}
   const mo=t.cls.radius+t.cls.bl-4;
   const base=(t.tang==null?t.ang:t.tang);
   // BOMBARD: humans aim the arc with the charge meter, bots fuse to their target
@@ -1026,12 +1134,12 @@ function fire(t,chargeDist){
   }
   // SCOUT perk: the minigun spins up while the trigger is held
   let cd=g.cd;
-  if(skin==='scout')cd=Math.round(cd*(1-(t.spin||0)/48*.45));
+  if(skin==='spinup')cd=Math.round(cd*(1-(t.spin||0)/48*.45));
   t.cd=Math.round(cd*(fx.rapid>0?.5:1));t.recoil=g.br+(heavy?3:0);
   // PHANTOM perk: firing phases the hull for a beat
-  if(skin==='phantom')t.fx.ghost=Math.max(t.fx.ghost,26);
+  if(skin==='phase')t.fx.ghost=Math.max(t.fx.ghost,26);
   burst(t.x+Math.cos(base)*mo,t.y+Math.sin(base)*mo,heavy?'#ff8c42':'#ffd166',heavy?8:4,heavy?3.5:2.5);
-  if(heavy)sfx(240,70,.18,'square',.11);else SND[t.cls.gun]();
+  if(heavy)sfx(240,70,.18,'square',.11);else sndFor(t.cls.gun)();
 }
 
 /* ---------------- AI ---------------- */
@@ -1197,6 +1305,17 @@ function aiInput(t){
   return inp;
 }
 function humanInput(t){
+  // touch joystick drives the local tank (P1 offline, your tank online)
+  if(TOUCH.on&&(t.team===0||t.netLocal)){
+    const jl=Math.hypot(TOUCH.dx,TOUCH.dy);
+    if(jl>9||TOUCH.fire){
+      const k0=KEYMAP[t.team];
+      let kdx=(keys[k0.right]?1:0)-(keys[k0.left]?1:0);
+      let kdy=(keys[k0.down]?1:0)-(keys[k0.up]?1:0);
+      return{dx:jl>9?TOUCH.dx/jl:kdx,dy:jl>9?TOUCH.dy/jl:kdy,
+        fire:TOUCH.fire||!!keys[k0.fire]};
+    }
+  }
   if(t.netLocal){ // online: your machine, so both control schemes drive your tank
     let dx=0,dy=0,f=false;
     for(const k of KEYMAP){
@@ -1256,6 +1375,11 @@ function controlTank(t){
   const ice=tile==='*';
   t.ivx*=ice?.96:.86;t.ivy*=ice?.96:.86;
   t.dist+=Math.hypot(t.mvx+bx,t.mvy+by);
+  if((t.mvx||t.mvy)&&frame%9===0){
+    const back=t.ang+Math.PI;
+    parts.push({x:t.x+Math.cos(back)*(t.cls.radius+6),y:t.y+Math.sin(back)*(t.cls.radius+6),
+      vx:Math.cos(back)*.5,vy:Math.sin(back)*.5-.3,life:22,color:'smoke',size:2.5+Math.random()*2});
+  }
   if((t.mvx||t.mvy)&&frame%3===0&&tile!=='b')marks.push({x:t.x,y:t.y,ang:t.ang,life:170,r:t.cls.radius});
   const gx0=Math.max(0,(t.x-60)/T|0),gx1=Math.min(COLS-1,(t.x+60)/T|0);
   const gy0=Math.max(0,(t.y-60)/T|0),gy1=Math.min(ROWS-1,(t.y+60)/T|0);
@@ -1310,7 +1434,7 @@ function controlTank(t){
     else{mines.push({x:t.x,y:t.y,owner:t,arm:30,life:900});t.minesToLay--;t.mineCd=40;sMine()}
   }
   const g3=GUNS[t.cls.gun];
-  if(t.cls.skin==='scout')t.spin=inp.fire?Math.min(48,(t.spin||0)+1):Math.max(0,(t.spin||0)-2);
+  if(t.cls.trait==='spinup')t.spin=inp.fire?Math.min(48,(t.spin||0)+1):Math.max(0,(t.spin||0)-2);
   if(g3.air&&!t.ai){
     // hold to stretch the arc, release to lob
     if(inp.fire&&t.cd<=0){
@@ -1352,7 +1476,7 @@ function tankCollide(){
 function damage(t,dmg,fromAng,knock){
   if(t.fx.star>0)return;
   if(t.shield>0){t.shield--;burst(t.x,t.y,'#3d7ea6',10,3);sBounce();addFloat(t.x,t.y-24,'BLOCKED','#3d7ea6');return}
-  if(t.cls.skin==='titan')knock*=.3;
+  if(t.cls.trait==='brace')knock*=.3;
   t.hp-=dmg;t.inv=BULLET_INVUL;shake=Math.max(shake,5+dmg*2);hitstop=Math.max(hitstop,dmg>1?6:3);sHit();
   ring(t.x,t.y,'#fff',5,4);if(dmg>1)ring(t.x,t.y,'#ffd166',7,5);
   t.squash=1;flash=Math.max(flash,dmg>1?.5:.3);
@@ -1473,7 +1597,8 @@ function stepPlay(){
     if(b.life&&--b.life<=0){
       if(b.air)explode(b.x+b.vx,b.y+b.vy,b.aoe,b.dmg,b.owner);
       // BLAZE perk: spent flames scorch the ground for a while
-      if(b.gun==='flame'&&burns.length<14)burns.push({x:b.x,y:b.y,life:90,owner:b.owner});
+      if(GUNS[b.gun].burn&&burns.length<14)burns.push({x:b.x,y:b.y,life:90,owner:b.owner});
+      if(GUNS[b.gun].mine&&mines.length<12)mines.push({x:b.x,y:b.y,owner:b.owner,arm:26,life:720});
       bullets.splice(i,1);
       if(state!=='play')return;
       continue;
@@ -1509,7 +1634,7 @@ function stepPlay(){
         if(hy||(mv&&Math.abs(b.vy)>=Math.abs(b.vx)))b.vy=-b.vy;
         if(!hx&&!hy&&!mv){b.vx=-b.vx;b.vy=-b.vy}
         // RICOCHET perk: a banked shot hits harder
-        if(b.gun==='ricochet'&&!b.hot){b.hot=true;b.dmg++}
+        if(b.owner&&b.owner.cls.trait==='bank'&&!b.hot){b.hot=true;b.dmg++}
         sBounce();burst(b.x,b.y,'#7ae0c3',3,2);
       }else{burst(b.x,b.y,'#ffd166',6,2.5);bullets.splice(i,1);continue}
     }
@@ -1522,7 +1647,7 @@ function stepPlay(){
         bullets.splice(i,1);gone=true;
         let d2=b.dmg;
         // LONGSHOT perk: the round gathers pace over distance
-        if(b.gun==='sniper'){const fl=Math.hypot(b.x-b.ox,b.y-b.oy);d2=fl<160?1:fl<340?2:3;
+        if(GUNS[b.gun].falloff){const fl=Math.hypot(b.x-b.ox,b.y-b.oy);d2=fl<160?1:fl<340?2:3;
           if(d2===3)addFloat(t.x,t.y-30,'LONG SHOT!','#35a44a')}
         damage(t,d2,Math.atan2(b.vy,b.vx),b.knock!=null?b.knock:GUNS[b.gun].knock);
         break;
@@ -1589,12 +1714,12 @@ function stepSelect(){
   for(let p=0;p<n;p++){
     const k=KEYMAP[p],s=sel[p],pr=prof(p);
     if(!s.locked){
-      let col=s.i%3,row=(s.i/3)|0,moved=false;
-      if(pressQ.has(k.left)){col=(col+2)%3;moved=true}
-      if(pressQ.has(k.right)){col=(col+1)%3;moved=true}
+      let col=s.i%8,row=(s.i/8)|0,moved=false;
+      if(pressQ.has(k.left)){col=(col+7)%8;moved=true}
+      if(pressQ.has(k.right)){col=(col+1)%8;moved=true}
       if(pressQ.has(k.up)){row=(row+2)%3;moved=true}
       if(pressQ.has(k.down)){row=(row+1)%3;moved=true}
-      if(moved){s.i=row*3+col;sTick()}
+      if(moved){s.i=row*8+col;sTick()}
       if(pressQ.has(k.fire)){
         if(isUnlocked(s.i,pr)){s.locked=true;sLock();if(onLockIn)onLockIn(p)}
         else{toast={txt:'LOCKED · '+CLASSES[s.i].unlock.txt,life:150};sBack()}
@@ -1872,11 +1997,17 @@ function drawMarks(){
 }
 /* ---------------- tank drawing ---------------- */
 function drawTankBody(o){
-  const c=o.cls,r=c.radius,rec=Math.max(0,o.recoil||0),fx=o.fx;
+  const c=o.cls,r=c.radius*1.16,rec=Math.max(0,o.recoil||0),fx=o.fx;
   const ta=(o.tang==null?o.ang:o.tang);
   const ghost=fx&&fx.ghost>0;
   if(ghost)cx.globalAlpha=.45;
-  // ground shadow
+  // team light pool, then the ground shadow
+  const ring0=o.teamColor||(o.team!==undefined?TEAMS[o.team].color:null);
+  if(ring0){
+    cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=.12;
+    cx.fillStyle=ring0;cx.beginPath();cx.ellipse(o.x,o.y+4,r*1.7,r*1.35,0,0,Math.PI*2);cx.fill();
+    cx.restore();
+  }
   cx.fillStyle='rgba(20,22,40,.26)';
   cx.beginPath();cx.ellipse(o.x+3,o.y+6,r*1.2,r*.98,0,0,Math.PI*2);cx.fill();
   const sq=o.squash||0;
@@ -2045,8 +2176,13 @@ function drawBullets(){
       cx.beginPath();cx.arc(b.x,b.y,b.r,0,Math.PI*2);cx.fill();cx.stroke();
       cx.globalAlpha=1;continue;
     }
-    cx.fillStyle=b.gun==='shell'?'#f4a259':b.gun==='ricochet'?'#7ae0c3':'#ffd166';
-    cx.strokeStyle=INK;cx.lineWidth=2.5;
+    const col=b.gun==='shell'?'#f4a259':b.gun==='ricochet'?(b.hot?'#ffffff':'#7ae0c3'):b.heavy?'#ff8c42':'#ffd166';
+    cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=.4;
+    cx.fillStyle=col;cx.beginPath();cx.arc(b.x,b.y,b.r+5,0,Math.PI*2);cx.fill();
+    cx.restore();
+    if(b.px||b.py){cx.strokeStyle=col;cx.globalAlpha=.35;cx.lineWidth=b.r;cx.lineCap='round';
+      cx.beginPath();cx.moveTo(b.px,b.py);cx.lineTo(b.x,b.y);cx.stroke();cx.globalAlpha=1}
+    cx.fillStyle=col;cx.strokeStyle=INK;cx.lineWidth=2.5;
     cx.beginPath();cx.arc(b.x,b.y,b.r,0,Math.PI*2);cx.fill();cx.stroke();
   }
 }
@@ -2057,9 +2193,60 @@ function drawArenaFrame(){
   drawCrates();
   drawMovers();
   drawMinesAndPickups();
-  for(const p of parts){cx.globalAlpha=Math.min(1,p.life/14);cx.fillStyle=p.color;cx.beginPath();cx.arc(p.x,p.y,p.size,0,Math.PI*2);cx.fill()}
+  for(const bn of burns){
+    const f=bn.life/90;
+    cx.save();cx.globalCompositeOperation='lighter';
+    cx.globalAlpha=.35*f+.1*Math.sin(frame*.4+bn.x);
+    cx.fillStyle='#ff8c42';cx.beginPath();cx.arc(bn.x,bn.y,11+Math.sin(frame*.3+bn.y)*2,0,Math.PI*2);cx.fill();
+    cx.globalAlpha=.5*f;cx.fillStyle='#ffd166';
+    cx.beginPath();cx.arc(bn.x,bn.y-2,6+Math.sin(frame*.5+bn.x)*1.5,0,Math.PI*2);cx.fill();
+    cx.restore();
+  }
+  for(const p of parts){
+    if(p.color==='smoke'){
+      cx.globalAlpha=Math.min(1,p.life/34)*.3;cx.fillStyle='#6b6f7d';
+      cx.beginPath();cx.arc(p.x,p.y,p.size+(34-p.life)*.18,0,Math.PI*2);cx.fill();
+    }else{
+      cx.globalAlpha=Math.min(1,p.life/14);cx.fillStyle=p.color;
+      cx.beginPath();cx.arc(p.x,p.y,p.size,0,Math.PI*2);cx.fill();
+    }
+  }
   cx.globalAlpha=1;
+  cx.save();cx.globalCompositeOperation='lighter';
+  for(const rg of rings){
+    cx.globalAlpha=rg.life/22*.7;cx.strokeStyle=rg.color;cx.lineWidth=rg.w*(rg.life/22)+1;
+    cx.beginPath();cx.arc(rg.x,rg.y,rg.r,0,Math.PI*2);cx.stroke();
+  }
+  cx.restore();cx.globalAlpha=1;
   drawBullets();
+  for(const t of tanks){
+    if(!(t.charge>0)||t.hp<=0)continue;
+    const ta=(t.tang==null?t.ang:t.tang),g=GUNS[t.cls.gun];
+    const lx=t.x+Math.cos(ta)*t.charge,ly=t.y+Math.sin(ta)*t.charge;
+    cx.save();
+    // dotted flight path that arcs like the shell will
+    cx.setLineDash([4,9]);cx.lineDashOffset=-frame*.9;
+    cx.strokeStyle=t.teamColor;cx.lineWidth=3.5;cx.globalAlpha=.9;
+    cx.beginPath();
+    const steps=14;
+    for(let k=0;k<=steps;k++){
+      const f=k/steps;
+      const px=t.x+Math.cos(ta)*t.charge*f,py=t.y+Math.sin(ta)*t.charge*f-Math.sin(f*Math.PI)*34;
+      k?cx.lineTo(px,py):cx.moveTo(px,py);
+    }
+    cx.stroke();cx.setLineDash([]);
+    // landing zone: pulsing blast ring + crosshair
+    const pulse=1+Math.sin(frame*.25)*.08;
+    cx.globalAlpha=.22;cx.fillStyle=t.teamColor;
+    cx.beginPath();cx.arc(lx,ly,g.aoe*pulse,0,Math.PI*2);cx.fill();
+    cx.globalAlpha=.95;cx.lineWidth=3;cx.strokeStyle=t.teamColor;
+    cx.beginPath();cx.arc(lx,ly,g.aoe*pulse,0,Math.PI*2);cx.stroke();
+    cx.lineWidth=2.5;
+    cx.beginPath();cx.moveTo(lx-9,ly);cx.lineTo(lx+9,ly);cx.moveTo(lx,ly-9);cx.lineTo(lx,ly+9);cx.stroke();
+    cx.strokeStyle=INK;cx.globalAlpha=.5;cx.lineWidth=1.5;
+    cx.beginPath();cx.arc(lx,ly,g.aoe*pulse+2,0,Math.PI*2);cx.stroke();
+    cx.restore();
+  }
   tanks.forEach(drawTank);
   for(const t of tanks){
     if(!(t.lock>14)||t.ai)continue;
@@ -2227,12 +2414,12 @@ function bounce(i,speed){return Math.sin(frame*(speed||.08)+i)*3}
 /* ---------------- title ---------------- */
 function drawTitle(){
   screenBg('#2a2f52');
-  // parade of tanks rolling across the back
-  for(let i=0;i<4;i++){
-    const c=CLASSES[(i*2+1)%CLASSES.length];
-    const x=((frame*(.5+i*.15)+i*260)%(W+240))-120;
-    cx.save();cx.globalAlpha=.22;
-    drawTankBody({x,y:110+i*118,ang:0,cls:c,recoil:0,dist:frame*2});
+  // parade of tanks rolling across the very top, out of everything's way
+  for(let i=0;i<2;i++){
+    const c=CLASSES[(i*4+2)%CLASSES.length];
+    const x=((frame*(.55+i*.2)+i*340)%(W+240))-120;
+    cx.save();cx.globalAlpha=.3;
+    drawTankBody({x,y:46+i*30,ang:0,cls:c,recoil:0,dist:frame*2});
     cx.restore();
   }
   const t=frame*.05;
@@ -2255,18 +2442,22 @@ function drawTitle(){
   cx.fillStyle=g2;cx.fillText('SMASHDOWN!',0,0);
   cx.restore();
   // duelling pair, front and centre
-  drawTankBody({x:W/2-140,y:352,ang:.1,cls:CLASSES[1],teamColor:TEAMS[0].color,recoil:0,dist:frame});
-  drawTankBody({x:W/2+140,y:352,ang:Math.PI-.1,cls:CLASSES[3],teamColor:TEAMS[1].color,recoil:0,dist:frame});
-  // roster strip
-  const n=CLASSES.length,cw=64,x0=W/2-(n*cw)/2;
-  for(let i=0;i<n;i++){
-    const c=CLASSES[i],y=452+bounce(i*.7,.09);
-    drawBadge(x0+i*cw+cw/2,y,21,c,null,'',0,0);
+  for(const [side,ci,team] of [[-1,1,0],[1,3,1]]){
+    cx.save();cx.translate(W/2+side*150,352);cx.scale(2,2);
+    drawTankBody({x:0,y:0,ang:side<0?.1:Math.PI-.1,cls:CLASSES[ci],teamColor:TEAMS[team].color,recoil:0,dist:frame});
+    cx.restore();
   }
-  label(MAPS.length+' ARENAS   ·   '+CLASSES.length+' TANKS   ·   '+POWERS.length+' POWERUPS',W/2,504,13,'#c9c4ae');
+  // roster strip: the whole garage, two rows
+  const cw=56,x0=W/2-(12*cw)/2;
+  for(let i=0;i<CLASSES.length;i++){
+    const c=CLASSES[i],row=(i/12)|0;
+    const y=442+row*42+bounce(i*.7,.09);
+    drawBadge(x0+(i%12)*cw+cw/2,y,17,c,null,'',0,0);
+  }
+  label(MAPS.length+' ARENAS   ·   '+CLASSES.length+' TANKS   ·   '+POWERS.length+' POWERUPS',W/2,524,13,'#c9c4ae');
   if((frame/30|0)%2===0){
     cx.save();cx.translate(0,Math.sin(frame*.14)*2);
-    splash('PRESS SPACE OR ENTER',26,540,0,'#ffd166');
+    splash('PRESS SPACE OR ENTER',24,554,0,'#ffd166');
     cx.restore();
   }
   footer('P1: WASD + SPACE   ·   P2: ARROWS + ENTER   ·   AUTO-AIM ON   ·   F: FULLSCREEN   ·   N: MUSIC');
@@ -2426,61 +2617,67 @@ function drawOnline(){
   footer('BACK: SPACE / ENTER / ESC');
 }
 
-/* ---------------- tank select ---------------- */
+/* ---------------- tank select: the full garage ---------------- */
 function drawSelect(){
-  screenBg();
-  const solo=participants()===1;
-  splash(solo?'CHOOSE YOUR TANK':'CHOOSE YOUR TANKS',40,40);
-  const cw=300,ch=142,gapx=14,gapy=11,x0=(W-3*cw-2*gapx)/2,y0=74;
-  for(let i=0;i<9;i++){
-    const col=i%3,row=(i/3)|0,x=x0+col*(cw+gapx),y=y0+row*(ch+gapy),c=CLASSES[i];
-    panel(x,y,cw,ch,c.color,12);
-    label(c.name,x+cw/2,y+14,14,'#fff');
-    cx.save();cx.translate(x+52,y+80);cx.scale(.9,.9);
-    drawTankBody({x:0,y:0,ang:0,cls:c,recoil:0});
-    cx.restore();
-    const labels=['SPD','ARM','POW'];
-    for(let s=0;s<3;s++){
-      const ly=y+42+s*19;
-      label(labels[s],x+104,ly,10,INK,'left');
-      for(let p=0;p<5;p++){
-        cx.fillStyle=p<c.pips[s]?c.color:'#d8cbb4';
-        cx.beginPath();cx.arc(x+140+p*15,ly,4.8,0,Math.PI*2);cx.fill();
-        cx.lineWidth=1.5;cx.strokeStyle=INK;cx.stroke();
-      }
-    }
-    label(c.desc+'  ·  HP '+c.hp,x+104,y+104,10.5,INK,'left');
-    label('★ '+c.perk,x+104,y+122,9.5,'#b3202c','left');
-    // lock overlay
+  screenBg('#232744');
+  splash('CHOOSE YOUR TANK',36,32);
+  const cw=110,ch=104,gapx=7,rowGap=26,x0=(W-8*cw-7*gapx)/2,y0=64;
+  for(let i=0;i<CLASSES.length;i++){
+    const col=i%8,row=(i/8)|0,c=CLASSES[i];
+    const x=x0+col*(cw+gapx),y=y0+row*(ch+rowGap);
+    if(col===0)label(TABS[row],x0+2,y-9,11,'#9aa0b8','left');
     const p0=prof(0),p1=prof(1);
-    const lockedFor=[!isUnlocked(i,p0),!isUnlocked(i,p1)];
-    if(lockedFor[0]&&(solo||lockedFor[1])){
-      cx.fillStyle='rgba(28,30,51,.72)';rr(cx,x,y,cw,ch,12);cx.fill();
-      cx.strokeStyle=INK;cx.lineWidth=3.5;rr(cx,x,y,cw,ch,12);cx.stroke();
-      cx.fillStyle=CREAM;rr(cx,x+cw/2-13,y+ch/2-8,26,22,5);cx.fill();
-      cx.strokeStyle=INK;cx.lineWidth=3;rr(cx,x+cw/2-13,y+ch/2-8,26,22,5);cx.stroke();
-      cx.beginPath();cx.arc(x+cw/2,y+ch/2-8,8,Math.PI,0);cx.lineWidth=3.5;cx.stroke();
-      label(c.unlock?c.unlock.txt:'LOCKED',x+cw/2,y+ch-24,11,'#ffd166');
+    const lockedAll=!isUnlocked(i,p0)&&(participants()===1||!isUnlocked(i,p1));
+    panel(x,y,cw,ch,c.color,12);
+    drawBadge(x+cw/2,y+52,23,c,null,'',0,0);
+    cx.fillStyle='#fff';cx.font='900 10.5px system-ui,Arial,sans-serif';
+    cx.textAlign='center';cx.textBaseline='middle';
+    cx.lineWidth=3;cx.strokeStyle=INK;cx.strokeText(c.name,x+cw/2,y+15);cx.fillText(c.name,x+cw/2,y+15);
+    label('HP '+c.hp,x+cw/2,y+90,9,'#8a8672');
+    if(lockedAll){
+      cx.fillStyle='rgba(24,26,44,.74)';rr(cx,x,y,cw,ch,12);cx.fill();
+      cx.strokeStyle=INK;cx.lineWidth=3;rr(cx,x,y,cw,ch,12);cx.stroke();
+      cx.fillStyle=CREAM;rr(cx,x+cw/2-10,y+42,20,17,4);cx.fill();
+      cx.strokeStyle=INK;cx.lineWidth=2.5;rr(cx,x+cw/2-10,y+42,20,17,4);cx.stroke();
+      cx.strokeStyle=CREAM;cx.beginPath();cx.arc(x+cw/2,y+42,6.5,Math.PI,0);cx.lineWidth=3;cx.stroke();
+      label(c.unlock?c.unlock.txt:'LOCKED',x+cw/2,y+74,7.5,'#ffd166');
     }
     for(let p=0;p<participants();p++){
       if(sel[p].i!==i)continue;
-      const off=p===0?3:(sel[0].i===sel[1].i?9:3),col2=prof(p).color;
-      cx.strokeStyle=col2;cx.lineWidth=5;
-      rr(cx,x-off,y-off,cw+off*2,ch+off*2,14);cx.stroke();
-      cx.fillStyle=col2;rr(cx,x-off+(p===0?0:cw-52),y-off-10,54,20,8);cx.fill();
-      cx.lineWidth=2.5;cx.strokeStyle=INK;rr(cx,x-off+(p===0?0:cw-52),y-off-10,54,20,8);cx.stroke();
-      label((sel[p].locked?'✔ ':'')+prof(p).name.slice(0,6),x-off+(p===0?27:cw-25),y-off,10,'#fff');
+      const off=p===0?3:(sel[0].i===sel[1].i?8:3),col2=prof(p).color;
+      selectRing(x-off+3,y-off+3,cw+off*2-6,ch+off*2-6,col2,12);
+      cx.fillStyle=col2;rr(cx,x-off+(p===0?-4:cw-34),y-off-9,40,18,7);cx.fill();
+      cx.lineWidth=2.5;cx.strokeStyle=INK;rr(cx,x-off+(p===0?-4:cw-34),y-off-9,40,18,7);cx.stroke();
+      label((sel[p].locked?'✔':'')+prof(p).name.slice(0,4),x-off+(p===0?16:cw-14),y-off,9,'#fff');
     }
   }
-  // opponent strip
-  const y2=H-46;
-  if(mode==='duel'){
-    label('OPPONENT: CPU '+CLASSES[sel[1].i].name+'  ·  '+AI_LEVELS[aiLevel].name,W/2,y2-14,14,'#ffd166');
-  }else if(mode==='campaign'){
-    const st=campaignStage(campStage);
-    label('STAGE '+(campStage+1)+'  ·  '+MAPS[st.map].name+'  ·  CPU '+CLASSES[st.cls].name+'  ·  '+AI_LEVELS[st.ai].name,W/2,y2-14,14,'#ffd166');
+  // detail panels: what the highlighted tank actually does
+  const twoP=participants()===2;
+  for(let p=0;p<(twoP?2:1);p++){
+    const c=CLASSES[sel[p].i],px=twoP?(p===0?14:W/2+7):14,pw=twoP?W/2-21:W/2+40,py=H-92,ph2=62;
+    panel(px,py,pw,ph2,c.color,12);
+    label(c.name+(isUnlocked(sel[p].i,prof(p))?'':'  ·  LOCKED'),px+12,py+15,12,'#fff','left');
+    label(c.desc,px+12,py+38,11,INK,'left');
+    label('★ '+c.perk,px+12,py+53,10,'#b3202c','left');
+    const labels=['SPD','ARM','POW'];
+    for(let st=0;st<3;st++){
+      const lx=px+pw-118,ly=py+26+st*13;
+      label(labels[st],lx-8,ly,8.5,'#8a8672','right');
+      for(let q=0;q<5;q++){
+        cx.fillStyle=q<c.pips[st]?c.color:'#d8cbb4';
+        cx.beginPath();cx.arc(lx+8+q*15,ly,4.4,0,Math.PI*2);cx.fill();
+        cx.lineWidth=1.4;cx.strokeStyle=INK;cx.stroke();
+      }
+    }
   }
-  if(allLocked())splash("LET'S GO!!",34,y2+8,-.03,'#ffd166');
+  if(!twoP){
+    const px=W/2+47,pw=W/2-61,py=H-92;
+    panel(px,py,pw,62,'#454458',12);
+    if(mode==='duel')label('OPPONENT: RANDOM CPU  ·  '+AI_LEVELS[aiLevel].name,px+pw/2,py+32,12,INK);
+    else{const st=campaignStage(campStage);
+      label('STAGE '+(campStage+1)+'  ·  '+MAPS[st.map].name+'  ·  '+AI_LEVELS[st.ai].name,px+pw/2,py+32,12,INK)}
+  }
+  if(allLocked())splash("LET'S GO!!",30,H-16,-.03,'#ffd166');
   else footer('MOVE: WASD / ARROWS      LOCK IN: SPACE / ENTER      BACK: ESC');
   drawToast();
 }
@@ -2512,6 +2709,18 @@ function drawGameplay(){
     label(m.name+'  ·  '+(mode==='campaign'?('STAGE '+(campStage+1)):((mapIndex+1)+'/'+MAPS.length))+'  ·  '+goal,W/2,21,12,INK);
   }
   if(state==='round'){
+    const loser=tanks[1-roundWinner.team];
+    if(loser){
+      for(let k=0;k<3;k++){
+        const a=frame*.09+k*2.09;
+        cx.save();cx.translate(ko.x+Math.cos(a)*26,ko.y-8+Math.sin(a)*9);
+        cx.rotate(a);
+        cx.fillStyle='#ffd166';cx.strokeStyle=INK;cx.lineWidth=2;
+        cx.beginPath();
+        for(let i=0;i<10;i++){const r2=i%2?3:7,aa=i/10*Math.PI*2;cx.lineTo(Math.cos(aa)*r2,Math.sin(aa)*r2)}
+        cx.closePath();cx.fill();cx.stroke();cx.restore();
+      }
+    }
     splash(roundWinner.tag+' TAKES THE ROUND!',52,H/2-40,-.035,roundWinner.teamColor);
     splash('★',40,H/2+22,0,'#ffd166');
   }else if(state==='game'){
@@ -2559,6 +2768,43 @@ function draw(){
   }
   cx.restore();
 }
+
+/* ---------------- touch overlay: stick, fire, corner buttons ---------------- */
+function drawTouchUI(){
+  if(!TOUCH.on)return;
+  cx.save();
+  // pop-up joystick
+  if(TOUCH.jid!==null&&!menuish()){
+    cx.globalAlpha=.35;cx.fillStyle='#fff';
+    cx.beginPath();cx.arc(TOUCH.ax,TOUCH.ay,52,0,Math.PI*2);cx.fill();
+    cx.globalAlpha=.5;cx.lineWidth=3;cx.strokeStyle=INK;cx.stroke();
+    cx.globalAlpha=.85;cx.fillStyle=teamColor(0);
+    cx.beginPath();cx.arc(TOUCH.ax+TOUCH.dx,TOUCH.ay+TOUCH.dy,24,0,Math.PI*2);cx.fill();
+    cx.lineWidth=3;cx.strokeStyle=INK;cx.stroke();
+  }
+  // fire button during play
+  if(!menuish()){
+    cx.globalAlpha=TOUCH.fire?.95:.5;
+    const g=cx.createRadialGradient(FIRE_BTN.x,FIRE_BTN.y-8,6,FIRE_BTN.x,FIRE_BTN.y,FIRE_BTN.r);
+    g.addColorStop(0,'#ff7d85');g.addColorStop(1,'#ef3e4a');
+    cx.fillStyle=g;cx.beginPath();cx.arc(FIRE_BTN.x,FIRE_BTN.y,FIRE_BTN.r,0,Math.PI*2);cx.fill();
+    cx.lineWidth=4;cx.strokeStyle=INK;cx.stroke();
+    cx.fillStyle='#fff';cx.font='900 15px system-ui,Arial,sans-serif';
+    cx.textAlign='center';cx.textBaseline='middle';cx.fillText('FIRE',FIRE_BTN.x,FIRE_BTN.y+1);
+  }
+  // corner buttons
+  cx.globalAlpha=.45;
+  for(const [btn,glyph,show] of [[FS_BTN,'⛶',true],[BACK_BTN,'‹',menuish()&&state!=='title']]){
+    if(!show)continue;
+    cx.fillStyle='#1c1e33';cx.beginPath();cx.arc(btn.x,btn.y,btn.r,0,Math.PI*2);cx.fill();
+    cx.lineWidth=2.5;cx.strokeStyle='rgba(255,255,255,.5)';cx.stroke();
+    cx.fillStyle='#fff';cx.font='900 18px system-ui,Arial,sans-serif';
+    cx.textAlign='center';cx.textBaseline='middle';cx.fillText(glyph,btn.x,btn.y+1);
+  }
+  cx.restore();cx.globalAlpha=1;
+}
+const _drawBase=draw;
+draw=function(){_drawBase();drawTouchUI()};
 
 /* ---------------- main loop (fixed 60Hz) ---------------- */
 let last=performance.now(),acc=0;

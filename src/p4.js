@@ -106,17 +106,17 @@ function finishMatch(winner){
 
 /* ---------------- firing ---------------- */
 function fire(t,chargeDist){
-  const g=GUNS[t.cls.gun],fx=t.fx,skin=t.cls.skin;
+  const g=GUNS[t.cls.gun],fx=t.fx,skin=t.cls.trait;
   const maxLive=g.maxLive+(fx.triple>0?2:0);
   if(t.cd>0||t.fx.frozen>0||bullets.filter(b=>b.owner===t).length>=maxLive)return;
   let n=g.pellets||1,spread=g.spread||0;
   if(fx.triple>0){n=Math.max(3,n);spread=Math.max(.22,spread)}
   // SCATTER perk: hold your ground for a marksman's spread
-  if(skin==='scatter')spread=Math.hypot(t.mvx,t.mvy)>1.2?.3:.12;
+  if(skin==='still')spread=Math.hypot(t.mvx,t.mvy)>1.2?spread*1.2:.1;
   let dmg=g.dmg+(fx.big>0?1:0),br=g.br+(fx.big>0?3:0),knock=g.knock+(fx.big>0?4:0);
   // BRAWLER perk: every third shell is a heavy one
   let heavy=false;
-  if(skin==='brawler'){t.shots=(t.shots||0)+1;if(t.shots%4===0){heavy=true;dmg+=1;br+=3;knock+=5}}
+  if(skin==='heavy4'){t.shots=(t.shots||0)+1;if(t.shots%4===0){heavy=true;dmg+=1;br+=3;knock+=5}}
   const mo=t.cls.radius+t.cls.bl-4;
   const base=(t.tang==null?t.ang:t.tang);
   // BOMBARD: humans aim the arc with the charge meter, bots fuse to their target
@@ -138,12 +138,12 @@ function fire(t,chargeDist){
   }
   // SCOUT perk: the minigun spins up while the trigger is held
   let cd=g.cd;
-  if(skin==='scout')cd=Math.round(cd*(1-(t.spin||0)/48*.45));
+  if(skin==='spinup')cd=Math.round(cd*(1-(t.spin||0)/48*.45));
   t.cd=Math.round(cd*(fx.rapid>0?.5:1));t.recoil=g.br+(heavy?3:0);
   // PHANTOM perk: firing phases the hull for a beat
-  if(skin==='phantom')t.fx.ghost=Math.max(t.fx.ghost,26);
+  if(skin==='phase')t.fx.ghost=Math.max(t.fx.ghost,26);
   burst(t.x+Math.cos(base)*mo,t.y+Math.sin(base)*mo,heavy?'#ff8c42':'#ffd166',heavy?8:4,heavy?3.5:2.5);
-  if(heavy)sfx(240,70,.18,'square',.11);else SND[t.cls.gun]();
+  if(heavy)sfx(240,70,.18,'square',.11);else sndFor(t.cls.gun)();
 }
 
 /* ---------------- AI ---------------- */
@@ -309,6 +309,17 @@ function aiInput(t){
   return inp;
 }
 function humanInput(t){
+  // touch joystick drives the local tank (P1 offline, your tank online)
+  if(TOUCH.on&&(t.team===0||t.netLocal)){
+    const jl=Math.hypot(TOUCH.dx,TOUCH.dy);
+    if(jl>9||TOUCH.fire){
+      const k0=KEYMAP[t.team];
+      let kdx=(keys[k0.right]?1:0)-(keys[k0.left]?1:0);
+      let kdy=(keys[k0.down]?1:0)-(keys[k0.up]?1:0);
+      return{dx:jl>9?TOUCH.dx/jl:kdx,dy:jl>9?TOUCH.dy/jl:kdy,
+        fire:TOUCH.fire||!!keys[k0.fire]};
+    }
+  }
   if(t.netLocal){ // online: your machine, so both control schemes drive your tank
     let dx=0,dy=0,f=false;
     for(const k of KEYMAP){
@@ -368,6 +379,11 @@ function controlTank(t){
   const ice=tile==='*';
   t.ivx*=ice?.96:.86;t.ivy*=ice?.96:.86;
   t.dist+=Math.hypot(t.mvx+bx,t.mvy+by);
+  if((t.mvx||t.mvy)&&frame%9===0){
+    const back=t.ang+Math.PI;
+    parts.push({x:t.x+Math.cos(back)*(t.cls.radius+6),y:t.y+Math.sin(back)*(t.cls.radius+6),
+      vx:Math.cos(back)*.5,vy:Math.sin(back)*.5-.3,life:22,color:'smoke',size:2.5+Math.random()*2});
+  }
   if((t.mvx||t.mvy)&&frame%3===0&&tile!=='b')marks.push({x:t.x,y:t.y,ang:t.ang,life:170,r:t.cls.radius});
   const gx0=Math.max(0,(t.x-60)/T|0),gx1=Math.min(COLS-1,(t.x+60)/T|0);
   const gy0=Math.max(0,(t.y-60)/T|0),gy1=Math.min(ROWS-1,(t.y+60)/T|0);
@@ -422,7 +438,7 @@ function controlTank(t){
     else{mines.push({x:t.x,y:t.y,owner:t,arm:30,life:900});t.minesToLay--;t.mineCd=40;sMine()}
   }
   const g3=GUNS[t.cls.gun];
-  if(t.cls.skin==='scout')t.spin=inp.fire?Math.min(48,(t.spin||0)+1):Math.max(0,(t.spin||0)-2);
+  if(t.cls.trait==='spinup')t.spin=inp.fire?Math.min(48,(t.spin||0)+1):Math.max(0,(t.spin||0)-2);
   if(g3.air&&!t.ai){
     // hold to stretch the arc, release to lob
     if(inp.fire&&t.cd<=0){
@@ -464,7 +480,7 @@ function tankCollide(){
 function damage(t,dmg,fromAng,knock){
   if(t.fx.star>0)return;
   if(t.shield>0){t.shield--;burst(t.x,t.y,'#3d7ea6',10,3);sBounce();addFloat(t.x,t.y-24,'BLOCKED','#3d7ea6');return}
-  if(t.cls.skin==='titan')knock*=.3;
+  if(t.cls.trait==='brace')knock*=.3;
   t.hp-=dmg;t.inv=BULLET_INVUL;shake=Math.max(shake,5+dmg*2);hitstop=Math.max(hitstop,dmg>1?6:3);sHit();
   ring(t.x,t.y,'#fff',5,4);if(dmg>1)ring(t.x,t.y,'#ffd166',7,5);
   t.squash=1;flash=Math.max(flash,dmg>1?.5:.3);
@@ -585,7 +601,8 @@ function stepPlay(){
     if(b.life&&--b.life<=0){
       if(b.air)explode(b.x+b.vx,b.y+b.vy,b.aoe,b.dmg,b.owner);
       // BLAZE perk: spent flames scorch the ground for a while
-      if(b.gun==='flame'&&burns.length<14)burns.push({x:b.x,y:b.y,life:90,owner:b.owner});
+      if(GUNS[b.gun].burn&&burns.length<14)burns.push({x:b.x,y:b.y,life:90,owner:b.owner});
+      if(GUNS[b.gun].mine&&mines.length<12)mines.push({x:b.x,y:b.y,owner:b.owner,arm:26,life:720});
       bullets.splice(i,1);
       if(state!=='play')return;
       continue;
@@ -621,7 +638,7 @@ function stepPlay(){
         if(hy||(mv&&Math.abs(b.vy)>=Math.abs(b.vx)))b.vy=-b.vy;
         if(!hx&&!hy&&!mv){b.vx=-b.vx;b.vy=-b.vy}
         // RICOCHET perk: a banked shot hits harder
-        if(b.gun==='ricochet'&&!b.hot){b.hot=true;b.dmg++}
+        if(b.owner&&b.owner.cls.trait==='bank'&&!b.hot){b.hot=true;b.dmg++}
         sBounce();burst(b.x,b.y,'#7ae0c3',3,2);
       }else{burst(b.x,b.y,'#ffd166',6,2.5);bullets.splice(i,1);continue}
     }
@@ -634,7 +651,7 @@ function stepPlay(){
         bullets.splice(i,1);gone=true;
         let d2=b.dmg;
         // LONGSHOT perk: the round gathers pace over distance
-        if(b.gun==='sniper'){const fl=Math.hypot(b.x-b.ox,b.y-b.oy);d2=fl<160?1:fl<340?2:3;
+        if(GUNS[b.gun].falloff){const fl=Math.hypot(b.x-b.ox,b.y-b.oy);d2=fl<160?1:fl<340?2:3;
           if(d2===3)addFloat(t.x,t.y-30,'LONG SHOT!','#35a44a')}
         damage(t,d2,Math.atan2(b.vy,b.vx),b.knock!=null?b.knock:GUNS[b.gun].knock);
         break;

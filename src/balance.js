@@ -5,7 +5,7 @@ const G = boot();
 const N = G.CLASSES.length;
 const wins = Array.from({ length: N }, () => 0), games = Array.from({ length: N }, () => 0);
 const grid = Array.from({ length: N }, () => Array(N).fill('  .'));
-for (let rep = 0; rep < 3; rep++) for (let a = 0; a < N; a++) for (let b = 0; b < N; b++) {
+for (let rep = 0; rep < 2; rep++) for (let a = 0; a < N; a++) for (let b = 0; b < N; b++) {
   if (a === b) continue;
   G.mode = 'duel'; G.setAi(1); G.sel[0].i = a; G.startMatch();
   // both sides become bots of the classes under test, THEN the round starts
@@ -19,8 +19,8 @@ for (let rep = 0; rep < 3; rep++) for (let a = 0; a < N; a++) for (let b = 0; b 
   games[a]++; games[b]++;
   grid[a][b] = w === a ? '  W' : w === b ? '  L' : '  -';
 }
-console.log('        ' + G.CLASSES.map(c => c.name.slice(0, 3)).join(' '));
-grid.forEach((row, i) => console.log(G.CLASSES[i].name.padEnd(8) + row.join(' ')));
+if(false)console.log('        ' + G.CLASSES.map(c => c.name.slice(0, 3)).join(' '));
+if(false)grid.forEach((row, i) => console.log(G.CLASSES[i].name.padEnd(8) + row.join(' ')));
 console.log('\nwin rate (of ' + (6 * (N - 1)) + ' games each):');
 const rates = G.CLASSES.map((c, i) => [c.name, Math.round(wins[i] / games[i] * 100)]);
 rates.sort((x, y) => y[1] - x[1]).forEach(([n, r]) => console.log(' ', n.padEnd(9), r + '%'));

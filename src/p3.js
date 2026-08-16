@@ -103,8 +103,8 @@ function drawFace(p,r,mood,lookX,lookY,blink){
     rr(cx,-21,-3,7,11,3);cx.fill();cx.stroke();rr(cx,14,-3,7,11,3);cx.fill();cx.stroke();
   }else if(p.gear==='hood'){
     cx.fillStyle=p.gearA;
-    cx.beginPath();cx.arc(0,0,19,Math.PI*.92,Math.PI*2.08);cx.fill();cx.stroke();
-    cx.fillStyle='rgba(34,35,59,.25)';cx.beginPath();cx.arc(0,-1,16,Math.PI,0);cx.fill();
+    cx.beginPath();cx.arc(0,-2,18,Math.PI*1.02,Math.PI*1.98);cx.fill();cx.stroke();
+    cx.fillStyle=p.gearB;rr(cx,-17,-7,34,5,2.5);cx.fill();cx.stroke();
   }
   cx.restore();
 }

@@ -16,11 +16,12 @@ G.need(P().stats.wins===1,'win not recorded');
 G.need(P().stats.kos===3,'kos wrong: '+P().stats.kos);
 
 // second win should unlock SCATTER (needs 2 wins)
-G.need(!G.isUnlocked(4,P()),'SCATTER should still be locked');
+const SC=G.CLASSES.findIndex(c=>c.name==='SCATTER');
+G.need(!G.isUnlocked(SC,P()),'SCATTER should still be locked');
 G.startMatch();
 for(let r=0;r<3;r++){G.tick(120);G.damage(G.tanks[1],99);G.tick(200)}
 G.need(P().stats.wins===2,'second win missing');
-G.need(G.isUnlocked(4,P()),'SCATTER should unlock at 2 wins');
+G.need(G.isUnlocked(SC,P()),'SCATTER should unlock at 2 wins');
 G.need(G.toast&&/UNLOCKED/.test(G.toast.txt),'unlock toast missing');
 console.log('unlock toast:',G.toast.txt);
 G.need(G.stored().profiles[0].stats.wins===2,'stats not persisted');

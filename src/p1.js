@@ -9,25 +9,55 @@ const SWATCHES=['#ef3e4a','#ff8c42','#ffd23f','#35a44a','#2ec4b6','#3d7ea6','#a0
 /* ---------------- guns & tank classes ---------------- */
 const GUNS={
   rapid:   {cd:9,maxLive:5,dmg:1,spd:8.8,br:4,jitter:.09,knock:6,range:360},
+  gatling: {cd:7,maxLive:7,dmg:1,spd:9.2,br:3.5,jitter:.13,knock:4,range:330},
+  twin:    {cd:18,maxLive:4,dmg:1,spd:8,br:4.5,pellets:2,spread:.11,knock:7,range:400},
+  burst:   {cd:31,maxLive:6,dmg:1,spd:8,br:4,pellets:3,spread:.055,knock:6,range:360},
   cannon:  {cd:28,maxLive:3,dmg:1,spd:7.3,br:5,knock:9,range:420},
+  slug:    {cd:46,maxLive:2,dmg:2,spd:8.8,br:6,knock:12,range:460},
   shell:   {cd:42,maxLive:2,dmg:2,spd:6,br:8,knock:15,range:400},
-  sniper:  {cd:48,maxLive:1,dmg:2,spd:13,br:4.5,knock:12,trail:1,range:700},
+  sniper:  {cd:48,maxLive:1,dmg:2,spd:13,br:4.5,knock:12,trail:1,range:700,falloff:1},
+  railgun: {cd:74,maxLive:1,dmg:2,spd:15.5,br:5,knock:16,trail:1,range:780,falloff:1},
   scatter: {cd:28,maxLive:12,dmg:1,spd:7.6,br:5,pellets:4,spread:.26,life:30,knock:8,range:230},
+  blunder: {cd:32,maxLive:18,dmg:1,spd:9.2,br:5.5,pellets:6,spread:.34,life:30,knock:11,range:280},
   ricochet:{cd:31,maxLive:2,dmg:1,spd:6.8,br:5,bounces:2,knock:9,range:420},
+  bounce3: {cd:36,maxLive:2,dmg:1,spd:6.4,br:5.5,bounces:3,knock:9,range:470},
   mortar:  {cd:86,maxLive:1,dmg:2,spd:6,br:7,air:1,life:50,aoe:38,knock:12,range:400,minR:90,fuseErr:150},
-  flame:   {cd:4,maxLive:14,dmg:1,spd:7,br:4.5,jitter:.26,life:20,knock:2,range:155},
-  phase:   {cd:44,maxLive:1,dmg:2,spd:6.6,br:5.5,phase:1,knock:10,range:520},
+  cluster: {cd:88,maxLive:2,dmg:1,spd:6,br:5.5,air:1,life:50,aoe:40,knock:10,range:390,minR:90,fuseErr:110,pellets:2,spread:.13},
+  flame:   {cd:4,maxLive:14,dmg:1,spd:7,br:4.5,jitter:.26,life:20,knock:2,range:155,burn:1},
+  longflame:{cd:6,maxLive:14,dmg:1,spd:8,br:3.5,jitter:.13,life:20,knock:2,range:170,burn:1},
+  phase:   {cd:50,maxLive:1,dmg:2,spd:6.2,br:5.5,phase:1,knock:10,range:500},
+  phasefast:{cd:30,maxLive:2,dmg:1,spd:7.2,br:4.5,phase:1,knock:7,range:430},
+  minegun: {cd:26,maxLive:4,dmg:1,spd:8,br:6,life:44,knock:8,range:350,mine:1},
 };
+const TABS=['SPEED','BALANCED','HEAVY & TRICK'];
 const CLASSES=[
-  {name:'SCOUT',   skin:'scout',   gun:'rapid',   color:'#ffd23f',dark:'#cba317',light:'#ffe89a',hp:4,speed:3.9,radius:14,  bl:20,desc:'TWIN RAPID GUNS',     pips:[5,2,2],perk:'GUN SPINS UP AS YOU HOLD FIRE',unlock:null},
-  {name:'BRAWLER', skin:'brawler', gun:'cannon',  color:'#ef3e4a',dark:'#b3202c',light:'#ff7d85',hp:5,speed:3.1,radius:15,  bl:26,desc:'BALANCED CANNON',     pips:[3,3,3],perk:'EVERY 4TH SHELL IS HEAVY',unlock:null},
-  {name:'TITAN',   skin:'titan',   gun:'shell',   color:'#3d7ea6',dark:'#2a5f80',light:'#6fb0d8',hp:7,speed:2.4,radius:17,  bl:24,desc:'HEAVY SHELL · 2 DMG', pips:[1,5,5],perk:'BARELY MOVED BY HITS',unlock:null},
-  {name:'LONGSHOT',skin:'longshot',gun:'sniper',  color:'#35a44a',dark:'#1f7c32',light:'#6cd07e',hp:4,speed:3.3,radius:14,  bl:34,desc:'SNIPER · 1-3 DMG BY RANGE',pips:[3,2,4],perk:'DAMAGE GROWS WITH DISTANCE',unlock:null},
-  {name:'SCATTER', skin:'scatter', gun:'scatter', color:'#ff8c42',dark:'#d3652a',light:'#ffb27a',hp:5,speed:3.0,radius:15,  bl:18,desc:'TRIPLE SPREAD SHOT',  pips:[3,3,4],perk:'STAND STILL FOR A TIGHT SPREAD',unlock:{k:'wins',n:2, txt:'WIN 2 MATCHES'}},
-  {name:'RICOCHET',skin:'ricochet',gun:'ricochet',color:'#2ec4b6',dark:'#1e8f85',light:'#6ce4d8',hp:5,speed:3.2,radius:15,  bl:24,desc:'BOUNCES OFF WALLS',   pips:[4,3,3],perk:'BOUNCED SHOTS HIT HARDER',unlock:{k:'kos', n:15,txt:'SCORE 15 KOs'}},
-  {name:'BOMBARD', skin:'bombard', gun:'mortar',  color:'#8a9a2f',dark:'#66741f',light:'#c3d45e',hp:5,speed:2.7,radius:16,  bl:16,desc:'LOBS OVER WALLS',     pips:[2,4,4],perk:'HOLD FIRE TO AIM THE ARC, RELEASE TO LOB',unlock:{k:'campaign',n:4,txt:'CLEAR 4 CAMPAIGN STAGES'}},
-  {name:'BLAZE',   skin:'blaze',   gun:'flame',   color:'#d95d39',dark:'#a83f22',light:'#f28f6e',hp:5,speed:3.4,radius:14.5,bl:18,desc:'SHORT RANGE FLAME',   pips:[4,3,3],perk:'FLAMES LEAVE BURNING GROUND',unlock:{k:'wins',n:6, txt:'WIN 6 MATCHES'}},
-  {name:'PHANTOM', skin:'phantom', gun:'phase',   color:'#8d99ae',dark:'#5f6b80',light:'#c3ccdd',hp:5,speed:3.3,radius:14.5,bl:24,desc:'2 DMG THROUGH WALLS',pips:[3,3,4],perk:'EACH SHOT PHASES YOU THROUGH WALLS',unlock:{k:'campaign',n:9,txt:'CLEAR 9 CAMPAIGN STAGES'}},
+ /* -------- SPEED -------- */
+ {name:'SCOUT',  tab:0,skin:'scout',   pilot:'scout',   gun:'rapid',   trait:'spinup',color:'#ffd23f',dark:'#cba317',light:'#ffe89a',hp:4,speed:3.9,radius:14,bl:20,desc:'TWIN RAPID GUNS',perk:'GUN SPINS UP AS YOU HOLD FIRE',pips:[5,2,2],unlock:null},
+ {name:'DART',   tab:0,skin:'scout',   pilot:'dart',    gun:'twin',    trait:'none',  color:'#8ac926',dark:'#5f9418',light:'#b9e769',hp:4,speed:4.2,radius:13,bl:19,desc:'DOUBLE PEASHOOTER',perk:'FASTEST TREADS IN THE GAME',pips:[5,1,2],unlock:null},
+ {name:'SURGE',  tab:0,skin:'blaze',   pilot:'surge',   gun:'burst',   trait:'none',  color:'#4cc9f0',dark:'#2a93b8',light:'#8adcf5',hp:4,speed:3.8,radius:14,bl:21,desc:'3-ROUND BURST',perk:'TIGHT TRIPLE TAP, NO SPREAD',pips:[4,2,3],unlock:null},
+ {name:'VIPER',  tab:0,skin:'ricochet',pilot:'viper',   gun:'gatling', trait:'none',  color:'#80b918',dark:'#5a8310',light:'#b5dd5e',hp:4,speed:3.7,radius:14,bl:22,desc:'BUZZSAW GATLING',perk:'SPRAYS FASTER THAN ANYTHING',pips:[4,2,3],unlock:null},
+ {name:'BLAZE',  tab:0,skin:'blaze',   pilot:'blaze',   gun:'flame',   trait:'none',  color:'#d95d39',dark:'#a83f22',light:'#f28f6e',hp:5,speed:3.4,radius:14.5,bl:18,desc:'SHORT RANGE FLAME',perk:'FLAMES LEAVE BURNING GROUND',pips:[4,3,3],unlock:{k:'wins',n:6, txt:'WIN 6 MATCHES'}},
+ {name:'WISP',   tab:0,skin:'phantom', pilot:'wisp',    gun:'phasefast',trait:'phase',color:'#bde0fe',dark:'#7fa8cc',light:'#e2f1ff',hp:4,speed:3.8,radius:13.5,bl:22,desc:'QUICK GHOST BOLTS',perk:'FIRING PHASES YOU BRIEFLY',pips:[5,1,2],unlock:{k:'kos',n:25,txt:'SCORE 25 KOs'}},
+ {name:'JACKAL', tab:0,skin:'scatter', pilot:'jackal',  gun:'blunder', trait:'still', color:'#e0a458',dark:'#b07830',light:'#f0c791',hp:5,speed:3.6,radius:14,bl:17,desc:'5-PELLET BLUNDERBUSS',perk:'STAND STILL FOR A TIGHT SPREAD',pips:[4,2,4],unlock:{k:'rounds',n:40,txt:'PLAY 40 ROUNDS'}},
+ {name:'COMET',  tab:0,skin:'longshot',pilot:'comet',   gun:'slug',    trait:'none',  color:'#90e0ef',dark:'#5aa8b8',light:'#c1eef7',hp:4,speed:3.6,radius:13.5,bl:28,desc:'FAST HEAVY SLUG',perk:'HITS LIKE A TRUCK AT ANY RANGE',pips:[4,1,4],unlock:{k:'wins',n:10,txt:'WIN 10 MATCHES'}},
+ /* -------- BALANCED -------- */
+ {name:'BRAWLER',tab:1,skin:'brawler', pilot:'brawler', gun:'cannon',  trait:'heavy4',color:'#ef3e4a',dark:'#b3202c',light:'#ff7d85',hp:5,speed:3.1,radius:15,bl:26,desc:'BALANCED CANNON',perk:'EVERY 4TH SHELL IS HEAVY',pips:[3,3,3],unlock:null},
+ {name:'LONGSHOT',tab:1,skin:'longshot',pilot:'longshot',gun:'sniper', trait:'none',  color:'#35a44a',dark:'#1f7c32',light:'#6cd07e',hp:4,speed:3.3,radius:14,bl:34,desc:'SNIPER · 1-3 DMG BY RANGE',perk:'DAMAGE GROWS WITH DISTANCE',pips:[3,2,4],unlock:null},
+ {name:'SCATTER',tab:1,skin:'scatter', pilot:'scatter', gun:'scatter', trait:'still', color:'#ff8c42',dark:'#d3652a',light:'#ffb27a',hp:5,speed:3.0,radius:15,bl:18,desc:'QUAD SPREAD SHOT',perk:'STAND STILL FOR A TIGHT SPREAD',pips:[3,3,4],unlock:{k:'wins',n:2, txt:'WIN 2 MATCHES'}},
+ {name:'RICOCHET',tab:1,skin:'ricochet',pilot:'ricochet',gun:'ricochet',trait:'bank', color:'#2ec4b6',dark:'#1e8f85',light:'#6ce4d8',hp:5,speed:3.2,radius:15,bl:24,desc:'BOUNCES OFF WALLS',perk:'BANKED SHOTS HIT HARDER',pips:[4,3,3],unlock:{k:'kos', n:15,txt:'SCORE 15 KOs'}},
+ {name:'SLUGGER',tab:1,skin:'titan',   pilot:'slugger', gun:'slug',    trait:'heavy4',color:'#b5838d',dark:'#8a5a64',light:'#d4aab2',hp:5,speed:2.9,radius:15.5,bl:26,desc:'HEAVY SLUG RIFLE',perk:'EVERY 4TH SHELL IS HEAVY',pips:[2,4,4],unlock:{k:'wins',n:4,txt:'WIN 4 MATCHES'}},
+ {name:'RANGER', tab:1,skin:'longshot',pilot:'ranger',  gun:'burst',   trait:'none',  color:'#588157',dark:'#3e5d3d',light:'#8fb08e',hp:5,speed:3.2,radius:14.5,bl:26,desc:'MARKSMAN BURSTS',perk:'STEADY TRIPLE VOLLEYS',pips:[3,3,3],unlock:{k:'rounds',n:25,txt:'PLAY 25 ROUNDS'}},
+ {name:'JESTER', tab:1,skin:'ricochet',pilot:'jester',  gun:'bounce3', trait:'bank',  color:'#f06fa8',dark:'#bc4a80',light:'#f8a6c9',hp:5,speed:3.1,radius:15,bl:22,desc:'TRIPLE-BOUNCE BALLS',perk:'BANKED SHOTS HIT HARDER',pips:[3,3,3],unlock:{k:'kos',n:40,txt:'SCORE 40 KOs'}},
+ {name:'TRICKSTER',tab:1,skin:'phantom',pilot:'trickster',gun:'minegun',trait:'none', color:'#0f8b8d',dark:'#0a6163',light:'#4db3b5',hp:5,speed:3.1,radius:14.5,bl:20,desc:'LOBS PROXIMITY CHARGES',perk:'SPENT SHOTS BECOME MINES',pips:[3,3,3],unlock:{k:'campaign',n:6,txt:'CLEAR 6 CAMPAIGN STAGES'}},
+ /* -------- HEAVY & TRICK -------- */
+ {name:'TITAN',  tab:2,skin:'titan',   pilot:'titan',   gun:'shell',   trait:'brace', color:'#3d7ea6',dark:'#2a5f80',light:'#6fb0d8',hp:7,speed:2.4,radius:17,bl:24,desc:'HEAVY SHELL · 2 DMG',perk:'BARELY MOVED BY HITS',pips:[1,5,5],unlock:null},
+ {name:'BOMBARD',tab:2,skin:'bombard', pilot:'bombard', gun:'mortar',  trait:'none',  color:'#8a9a2f',dark:'#66741f',light:'#c3d45e',hp:5,speed:2.7,radius:16,bl:16,desc:'LOBS OVER WALLS',perk:'HOLD FIRE TO AIM THE ARC',pips:[2,4,4],unlock:{k:'campaign',n:4,txt:'CLEAR 4 CAMPAIGN STAGES'}},
+ {name:'PHANTOM',tab:2,skin:'phantom', pilot:'phantom', gun:'phase',   trait:'phase', color:'#8d99ae',dark:'#5f6b80',light:'#c3ccdd',hp:5,speed:3.3,radius:14.5,bl:24,desc:'2 DMG THROUGH WALLS',perk:'FIRING PHASES YOU BRIEFLY',pips:[3,3,4],unlock:{k:'campaign',n:9,txt:'CLEAR 9 CAMPAIGN STAGES'}},
+ {name:'GOLIATH',tab:2,skin:'titan',   pilot:'goliath', gun:'cannon',  trait:'brace', color:'#5c677d',dark:'#414a5c',light:'#8b95aa',hp:9,speed:2.0,radius:18,bl:26,desc:'A ROLLING FORTRESS',perk:'9 HP AND BARELY MOVED BY HITS',pips:[1,5,3],unlock:{k:'wins',n:15,txt:'WIN 15 MATCHES'}},
+ {name:'CLUSTER',tab:2,skin:'bombard', pilot:'cluster', gun:'cluster', trait:'none',  color:'#a3b18a',dark:'#78855f',light:'#c7d2b4',hp:5,speed:2.6,radius:16,bl:16,desc:'TWIN MORTAR SHELLS',perk:'HOLD FIRE TO AIM THE ARC',pips:[2,4,4],unlock:{k:'campaign',n:12,txt:'CLEAR 12 CAMPAIGN STAGES'}},
+ {name:'WARDEN', tab:2,skin:'titan',   pilot:'warden',  gun:'minegun', trait:'brace', color:'#748cab',dark:'#526685',light:'#a3b3ca',hp:7,speed:2.3,radius:17,bl:22,desc:'AREA-DENIAL MINES',perk:'SPENT SHOTS BECOME MINES',pips:[1,5,3],unlock:{k:'rounds',n:60,txt:'PLAY 60 ROUNDS'}},
+ {name:'RAILGUN',tab:2,skin:'longshot',pilot:'railgun', gun:'railgun', trait:'none',  color:'#d90429',dark:'#9d031e',light:'#f25e78',hp:4,speed:2.8,radius:15,bl:36,desc:'RAIL SLUG · 1-3 DMG',perk:'DEVASTATING AT EXTREME RANGE',pips:[2,2,5],unlock:{k:'kos',n:60,txt:'SCORE 60 KOs'}},
+ {name:'INFERNO',tab:2,skin:'blaze',   pilot:'inferno', gun:'longflame',trait:'none', color:'#e85d04',dark:'#b04503',light:'#f58f4a',hp:6,speed:2.9,radius:15.5,bl:19,desc:'LONG-REACH FLAMES',perk:'FLAMES LEAVE BURNING GROUND',pips:[2,4,4],unlock:{k:'wins',n:20,txt:'WIN 20 MATCHES'}},
 ];
 
 /* ---------------- pilots: a drawn character per tank ----------------
@@ -41,7 +71,22 @@ const PILOTS={
   ricochet:{skin:'#ffd9a8',gear:'headset',gearA:'#2ec4b6',gearB:'#1e8f85',eyes:'normal',mouth:'smirk',  hair:'#6b4a8f'},
   bombard: {skin:'#c98f63',gear:'helmet', gearA:'#8a9a2f',gearB:'#66741f',eyes:'squint',mouth:'grin',   hair:'#2b2b1c'},
   blaze:   {skin:'#e8b98a',gear:'goggles',gearA:'#d95d39',gearB:'#a83f22',eyes:'sharp', mouth:'fangs',  hair:'#8f2b12'},
-  phantom: {skin:'#cfd6e6',gear:'hood',   gearA:'#8d99ae',gearB:'#5f6b80',eyes:'glow',  mouth:'none',   hair:'#43506b'},
+  phantom: {skin:'#e9edf7',gear:'hood',   gearA:'#4a5670',gearB:'#39435c',eyes:'glow',  mouth:'smirk',  hair:'#39435c'},
+  dart:    {skin:'#f0c093',gear:'bandana',gearA:'#8ac926',gearB:'#5f9418',eyes:'wide',  mouth:'grin',  hair:'#2b2b1c'},
+  surge:   {skin:'#ffd9a8',gear:'headset',gearA:'#4cc9f0',gearB:'#2a93b8',eyes:'sharp', mouth:'smirk', hair:'#1f7a99'},
+  viper:   {skin:'#d9a072',gear:'goggles',gearA:'#80b918',gearB:'#5a8310',eyes:'squint',mouth:'fangs', hair:'#31450a'},
+  wisp:    {skin:'#eef2ff',gear:'hood',   gearA:'#7fa8cc',gearB:'#5c7ea3',eyes:'glow',  mouth:'none',  hair:'#5c7ea3'},
+  jackal:  {skin:'#c98f63',gear:'bandana',gearA:'#e0a458',gearB:'#b07830',eyes:'sharp', mouth:'fangs', hair:'#4a2c14'},
+  comet:   {skin:'#ffe0c0',gear:'visor',  gearA:'#90e0ef',gearB:'#5aa8b8',eyes:'wide',  mouth:'grin',  hair:'#d8d8d8'},
+  slugger: {skin:'#e8b98a',gear:'cap',    gearA:'#b5838d',gearB:'#8a5a64',eyes:'squint',mouth:'flat',  hair:'#3b2413'},
+  ranger:  {skin:'#d9a072',gear:'cap',    gearA:'#588157',gearB:'#3e5d3d',eyes:'sharp', mouth:'flat',  hair:'#241a12'},
+  jester:  {skin:'#ffd9a8',gear:'headset',gearA:'#f06fa8',gearB:'#bc4a80',eyes:'wide',  mouth:'grin',  hair:'#bc4a80'},
+  trickster:{skin:'#e8b98a',gear:'goggles',gearA:'#0f8b8d',gearB:'#0a6163',eyes:'normal',mouth:'smirk',hair:'#123'},
+  goliath: {skin:'#c98f63',gear:'helmet', gearA:'#5c677d',gearB:'#414a5c',eyes:'squint',mouth:'flat',  hair:'#241a12'},
+  cluster: {skin:'#ffd9a8',gear:'helmet', gearA:'#a3b18a',gearB:'#78855f',eyes:'normal',mouth:'grin',  hair:'#5a4632'},
+  warden:  {skin:'#d9a072',gear:'visor',  gearA:'#748cab',gearB:'#526685',eyes:'sharp', mouth:'flat',  hair:'#2f3b4c'},
+  railgun: {skin:'#e8b98a',gear:'visor',  gearA:'#d90429',gearB:'#9d031e',eyes:'sharp', mouth:'smirk', hair:'#3b0a12'},
+  inferno: {skin:'#c98f63',gear:'goggles',gearA:'#e85d04',gearB:'#b04503',eyes:'glow',  mouth:'fangs', hair:'#611f00'},
 };
 
 /* ---------------- powerups ---------------- */
@@ -126,7 +171,14 @@ const SND={
   scatter:()=>sfx(300,90,.14,'sawtooth',.09), ricochet:()=>sfx(420,160,.11,'square',.07),
   mortar:()=>sfx(140,320,.25,'triangle',.11), flame:()=>sfx(160,90,.06,'sawtooth',.03),
   phase:()=>sfx(880,220,.25,'sine',.08),
+  gatling:()=>sfx(560,240,.06,'square',.05), twin:()=>sfx(400,150,.1,'square',.07),
+  burst:()=>sfx(460,190,.09,'square',.07), slug:()=>sfx(250,80,.16,'square',.1),
+  railgun:()=>sfx(950,120,.2,'sawtooth',.11), blunder:()=>sfx(260,70,.16,'sawtooth',.1),
+  bounce3:()=>sfx(420,160,.11,'square',.07), cluster:()=>sfx(150,340,.22,'triangle',.1),
+  longflame:()=>sfx(180,100,.06,'sawtooth',.03), phasefast:()=>sfx(760,260,.18,'sine',.07),
+  minegun:()=>sfx(320,120,.14,'triangle',.09),
 };
+const sndFor=g=>(SND[g]||SND.cannon);
 const sHit=()=>sfx(160,60,.18,'sawtooth',.14), sKO=()=>sfx(500,40,.5,'sawtooth',.18);
 const sGo=()=>sfx(660,660,.15,'square',.12), sTick=()=>sfx(440,440,.1,'square',.08);
 const sStar=()=>sfx(880,1320,.2,'triangle',.1), sBounce=()=>sfx(520,300,.08,'square',.06);
@@ -243,6 +295,58 @@ function toggleFullscreen(){
   }catch(e){}
 }
 if(cv.addEventListener)cv.addEventListener('dblclick',toggleFullscreen);
+/* ---------------- touch: pop-up joystick + fire button ----------------
+   The stick appears wherever the thumb lands and vanishes on release.
+   In menus a tap = confirm and a flick = move the cursor. */
+const TOUCH={on:false,jid:null,ax:0,ay:0,dx:0,dy:0,fid:null,fire:false,t0:0,sx:0,sy:0};
+function touchXY(t){const r=cv.getBoundingClientRect();return{x:(t.clientX-r.left)/r.width*W,y:(t.clientY-r.top)/r.height*H}}
+const FIRE_BTN={x:W-78,y:H-160,r:46};
+const FS_BTN={x:W-30,y:30,r:20};
+const BACK_BTN={x:30,y:30,r:20};
+function inC(p,c){return Math.hypot(p.x-c.x,p.y-c.y)<c.r+8}
+function menuish(){return !['ready','play','round','game'].includes(state)}
+if(cv.addEventListener){
+cv.addEventListener('touchstart',e=>{
+  e.preventDefault();audioOn();TOUCH.on=true;
+  for(const t of e.changedTouches){
+    const p=touchXY(t);
+    if(inC(p,FS_BTN)){toggleFullscreen();continue}
+    if(inC(p,BACK_BTN)&&menuish()){pressQ.add('Escape');continue}
+    if(!menuish()&&inC(p,FIRE_BTN)&&TOUCH.fid===null){TOUCH.fid=t.identifier;TOUCH.fire=true;continue}
+    if(TOUCH.jid===null){
+      TOUCH.jid=t.identifier;TOUCH.ax=p.x;TOUCH.ay=p.y;TOUCH.dx=0;TOUCH.dy=0;
+      TOUCH.t0=performance.now();TOUCH.sx=p.x;TOUCH.sy=p.y;
+    }
+  }
+},{passive:false});
+cv.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  for(const t of e.changedTouches){
+    if(t.identifier!==TOUCH.jid)continue;
+    const p=touchXY(t);
+    let dx=p.x-TOUCH.ax,dy=p.y-TOUCH.ay;
+    const d=Math.hypot(dx,dy);
+    if(d>52){dx=dx/d*52;dy=dy/d*52;TOUCH.ax=p.x-dx;TOUCH.ay=p.y-dy} // the base follows a long drag
+    TOUCH.dx=dx;TOUCH.dy=dy;
+  }
+},{passive:false});
+const touchEnd=e=>{
+  e.preventDefault();
+  for(const t of e.changedTouches){
+    if(t.identifier===TOUCH.fid){TOUCH.fid=null;TOUCH.fire=false}
+    if(t.identifier===TOUCH.jid){
+      if(menuish()){
+        const p=touchXY(t),mx=p.x-TOUCH.sx,my=p.y-TOUCH.sy,md=Math.hypot(mx,my);
+        if(performance.now()-TOUCH.t0<450&&md<16)pressQ.add('Space');
+        else if(md>=26)pressQ.add(Math.abs(mx)>Math.abs(my)?(mx>0?'KeyD':'KeyA'):(my>0?'KeyS':'KeyW'));
+      }
+      TOUCH.jid=null;TOUCH.dx=0;TOUCH.dy=0;
+    }
+  }
+};
+cv.addEventListener('touchend',touchEnd,{passive:false});
+cv.addEventListener('touchcancel',touchEnd,{passive:false});
+}
 const keys={},pressQ=new Set();
 let typeBuf='';
 addEventListener('keydown',e=>{
