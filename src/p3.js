@@ -118,7 +118,7 @@ function drawFace(p,r,mood,lookX,lookY,blink){
 }
 /* the round badge used on HUD plates, cards and the winner screen */
 function drawBadge(x,y,r,cls,ringColor,mood,lookX,lookY){
-  const p=PILOTS[cls.skin]||PILOTS.brawler;
+  const p=PILOTS[cls.pilot]||PILOTS.bulwark;
   cx.save();
   cx.beginPath();cx.arc(x,y,r,0,Math.PI*2);cx.clip();
   const g=cx.createLinearGradient(x,y-r,x,y+r);
@@ -212,76 +212,108 @@ function nearestFree(x,y){
   return{x,y};
 }
 
-/* ---------------- arena prerender ---------------- */
+/* ---------------- arena prerender: faux-3D ----------------
+   One light direction for the whole game (top-left). Walls are drawn as boxes
+   with a lit top face and shaded side faces, they cast real shadows onto the
+   floor, and every surface gets contact shading where it meets the ground. */
+const LIGHT={x:-0.55,y:-0.8};      // normalized-ish direction light comes FROM
+const WALL_H=13;                   // apparent height of a wall block in pixels
 function prerenderArena(m,mi){
   bgx.clearRect(0,0,W,H);
+  const solid=(x,y)=>{const r=m.grid[y];return r&&(r[x]==='#')};
+  // --- ground: two-tone tiles with grain and a soft lighting ramp ---
+  let s=(m.seed||mi*137)+11;const rnd=()=>(s=(s*1103515245+12345)&0x7fffffff)/0x7fffffff;
+  const gg=bgx.createLinearGradient(0,0,W,H);
+  gg.addColorStop(0,shade(m.floorA,.10));gg.addColorStop(1,shade(m.floorB,-.12));
+  bgx.fillStyle=gg;bgx.fillRect(0,0,W,H);
   for(let gy=0;gy<ROWS;gy++)for(let gx=0;gx<COLS;gx++){
-    bgx.fillStyle=((gx+gy)&1)?m.floorA:m.floorB;
-    bgx.fillRect(gx*T,gy*T,T,T);
-  }
-  let s=mi*137+11;const rnd=()=>(s=(s*1103515245+12345)&0x7fffffff)/0x7fffffff;
-  // ground grain: brightness variance + speckle so the floor reads as material
-  for(let gy=0;gy<ROWS;gy++)for(let gx=0;gx<COLS;gx++){
-    if(m.grid[gy][gx]!=='.')continue;
     const x=gx*T,y=gy*T;
-    if(rnd()<.5){bgx.fillStyle='rgba(255,255,255,'+(rnd()*.04).toFixed(3)+')';bgx.fillRect(x,y,T,T)}
-    else{bgx.fillStyle='rgba(20,22,40,'+(rnd()*.05).toFixed(3)+')';bgx.fillRect(x,y,T,T)}
-    for(let k=0;k<3;k++){
+    bgx.fillStyle=((gx+gy)&1)?'rgba(255,255,255,.055)':'rgba(0,0,0,.045)';
+    bgx.fillRect(x,y,T,T);
+    if(m.grid[gy][gx]!=='.')continue;
+    for(let k=0;k<5;k++){                       // material grain
       bgx.fillStyle=rnd()<.5?'rgba(255,255,255,.05)':'rgba(20,22,40,.06)';
-      bgx.fillRect(x+rnd()*T,y+rnd()*T,2,2);
+      bgx.fillRect(x+rnd()*T,y+rnd()*T,1+rnd()*2,1+rnd()*2);
     }
+    if(rnd()<.10)drawDecal(bgx,m.decal,x+8+rnd()*(T-16),y+8+rnd()*(T-16),rnd);
   }
   for(let gy=1;gy<ROWS-1;gy++)for(let gx=1;gx<COLS-1;gx++){
     const c=m.grid[gy][gx];
-    if(c==='.'&&rnd()<.09)drawDecal(bgx,m.decal,gx*T+8+rnd()*(T-16),gy*T+8+rnd()*(T-16),rnd);
-    else if(c==='*')drawIceTile(bgx,gx,gy,rnd);
+    if(c==='*')drawIceTile(bgx,gx,gy,rnd);
     else if(GATES[c])drawGate(bgx,gx,gy,c,m);
   }
+  // --- liquids sit in a carved basin: dark rim, gradient body, bright shore ---
   for(let gy=0;gy<ROWS;gy++)for(let gx=0;gx<COLS;gx++){
     if(m.grid[gy][gx]!=='~')continue;
-    bgx.fillStyle=m.liqA;bgx.fillRect(gx*T,gy*T,T,T);
-  }
-  // foam line just inside every shore, then the ink edge
-  for(let gy=0;gy<ROWS;gy++)for(let gx=0;gx<COLS;gx++){
-    if(m.grid[gy][gx]!=='~')continue;
-    const x=gx*T,y=gy*T,at=(a,b)=>m.grid[b]&&(m.grid[b][a]==='~'||m.grid[b][a]==='#');
-    bgx.strokeStyle=m.world==='volcano'?'rgba(255,220,120,.5)':'rgba(255,255,255,.4)';
-    bgx.lineWidth=3;bgx.beginPath();
-    if(!at(gx,gy-1)){bgx.moveTo(x+2,y+4);bgx.lineTo(x+T-2,y+4)}
-    if(!at(gx,gy+1)){bgx.moveTo(x+2,y+T-4);bgx.lineTo(x+T-2,y+T-4)}
-    if(!at(gx-1,gy)){bgx.moveTo(x+4,y+2);bgx.lineTo(x+4,y+T-2)}
-    if(!at(gx+1,gy)){bgx.moveTo(x+T-4,y+2);bgx.lineTo(x+T-4,y+T-2)}
-    bgx.stroke();
-  }
-  bgx.strokeStyle=INK;bgx.lineWidth=2.5;
-  for(let gy=0;gy<ROWS;gy++)for(let gx=0;gx<COLS;gx++){
-    if(m.grid[gy][gx]!=='~')continue;
-    const x=gx*T,y=gy*T,at=(a,b)=>m.grid[b]&&(m.grid[b][a]==='~'||m.grid[b][a]==='#');
-    bgx.beginPath();
-    if(!at(gx,gy-1)){bgx.moveTo(x,y+1);bgx.lineTo(x+T,y+1)}
-    if(!at(gx,gy+1)){bgx.moveTo(x,y+T-1);bgx.lineTo(x+T,y+T-1)}
-    if(!at(gx-1,gy)){bgx.moveTo(x+1,y);bgx.lineTo(x+1,y+T)}
-    if(!at(gx+1,gy)){bgx.moveTo(x+T-1,y);bgx.lineTo(x+T-1,y+T)}
-    bgx.stroke();
-  }
-  // blocks: cast shadow, body gradient, lit top face, ink outline
-  for(let gy=0;gy<ROWS;gy++)for(let gx=0;gx<COLS;gx++){
-    if(m.grid[gy][gx]!=='#')continue;
-    bgx.fillStyle='rgba(20,22,40,.30)';rr(bgx,gx*T+5,gy*T+7,T-4,T-4,9);bgx.fill();
-  }
-  for(let gy=0;gy<ROWS;gy++)for(let gx=0;gx<COLS;gx++){
-    if(m.grid[gy][gx]!=='#')continue;
     const x=gx*T,y=gy*T;
-    const bg2=bgx.createLinearGradient(x,y,x,y+T);
-    bg2.addColorStop(0,m.blockTop);bg2.addColorStop(.42,m.block);bg2.addColorStop(1,shade(m.block,-.22));
-    bgx.fillStyle=bg2;rr(bgx,x+1.5,y+1.5,T-3,T-3,8);bgx.fill();
-    bgx.fillStyle='rgba(255,255,255,.30)';rr(bgx,x+5,y+4.5,T-10,9,4.5);bgx.fill();
-    bgx.fillStyle='rgba(20,22,40,.18)';rr(bgx,x+5,y+T-13,T-10,7,3.5);bgx.fill();
-    bgx.strokeStyle=INK;bgx.lineWidth=3.2;rr(bgx,x+1.5,y+1.5,T-3,T-3,8);bgx.stroke();
+    const lg=bgx.createLinearGradient(x,y,x,y+T);
+    lg.addColorStop(0,shade(m.liqA,-.25));lg.addColorStop(.5,m.liqA);lg.addColorStop(1,shade(m.liqA,.12));
+    bgx.fillStyle=lg;bgx.fillRect(x,y,T,T);
   }
-  const g=bgx.createRadialGradient(W/2,H/2,H*.40,W/2,H/2,H*1.0);
-  g.addColorStop(0,'rgba(34,35,59,0)');g.addColorStop(1,'rgba(20,22,40,.34)');
-  bgx.fillStyle=g;bgx.fillRect(0,0,W,H);
+  for(let gy=0;gy<ROWS;gy++)for(let gx=0;gx<COLS;gx++){
+    if(m.grid[gy][gx]!=='~')continue;
+    const x=gx*T,y=gy*T,at=(a,b)=>m.grid[b]&&(m.grid[b][a]==='~'||m.grid[b][a]==='#');
+    // inner shadow along the bank, so the pool reads as sunken
+    bgx.strokeStyle='rgba(10,12,24,.35)';bgx.lineWidth=6;bgx.beginPath();
+    if(!at(gx,gy-1)){bgx.moveTo(x,y+3);bgx.lineTo(x+T,y+3)}
+    if(!at(gx-1,gy)){bgx.moveTo(x+3,y);bgx.lineTo(x+3,y+T)}
+    bgx.stroke();
+    bgx.strokeStyle=m.world==='volcano'?'rgba(255,214,120,.55)':'rgba(255,255,255,.4)';
+    bgx.lineWidth=3;bgx.beginPath();
+    if(!at(gx,gy+1)){bgx.moveTo(x,y+T-3);bgx.lineTo(x+T,y+T-3)}
+    if(!at(gx+1,gy)){bgx.moveTo(x+T-3,y);bgx.lineTo(x+T-3,y+T)}
+    bgx.stroke();
+  }
+  // --- wall shadows cast onto the floor, before the walls themselves ---
+  bgx.save();
+  bgx.fillStyle='rgba(12,14,26,.32)';
+  for(let gy=0;gy<ROWS;gy++)for(let gx=0;gx<COLS;gx++){
+    if(!solid(gx,gy))continue;
+    const x=gx*T,y=gy*T,ox=-LIGHT.x*WALL_H*1.5,oy=-LIGHT.y*WALL_H*1.5;
+    rr(bgx,x+ox,y+oy,T,T,7);bgx.fill();
+  }
+  bgx.restore();
+  // --- walls as lit boxes: side faces first, then the top face ---
+  for(let gy=0;gy<ROWS;gy++)for(let gx=0;gx<COLS;gx++){
+    if(!solid(gx,gy))continue;
+    const x=gx*T,y=gy*T;
+    // side faces show where there is no neighbouring wall to hide them
+    const sideCol=shade(m.block,-.34);
+    bgx.fillStyle=sideCol;
+    if(!solid(gx,gy+1))rr(bgx,x+1,y+WALL_H,T-2,T-1,6),bgx.fill();
+    if(!solid(gx+1,gy))rr(bgx,x+WALL_H,y+1,T-1,T-2,6),bgx.fill();
+    // top face, lit from the top-left
+    const tg=bgx.createLinearGradient(x,y,x+T,y+T);
+    tg.addColorStop(0,shade(m.blockTop,.22));
+    tg.addColorStop(.55,m.block);
+    tg.addColorStop(1,shade(m.block,-.18));
+    bgx.fillStyle=tg;rr(bgx,x+1,y+1,T-2-2,T-2-2,7);bgx.fill();
+    // bevel highlight along the lit edges, dark line along the shaded ones
+    bgx.strokeStyle='rgba(255,255,255,.38)';bgx.lineWidth=2.5;
+    bgx.beginPath();bgx.moveTo(x+5,y+3.5);bgx.lineTo(x+T-7,y+3.5);
+    bgx.moveTo(x+3.5,y+5);bgx.lineTo(x+3.5,y+T-7);bgx.stroke();
+    bgx.strokeStyle='rgba(10,12,24,.35)';
+    bgx.beginPath();bgx.moveTo(x+T-4,y+6);bgx.lineTo(x+T-4,y+T-6);
+    bgx.moveTo(x+6,y+T-4);bgx.lineTo(x+T-6,y+T-4);bgx.stroke();
+  }
+  // --- contact shading: floor darkens where it meets a wall ---
+  for(let gy=0;gy<ROWS;gy++)for(let gx=0;gx<COLS;gx++){
+    if(solid(gx,gy))continue;
+    const x=gx*T,y=gy*T;
+    for(const [ox,oy,gxo,gyo] of [[0,0,0,-1],[0,0,-1,0],[0,0,1,0],[0,0,0,1]]){
+      if(!solid(gx+gxo,gy+gyo))continue;
+      const gr=bgx.createLinearGradient(x+(gxo>0?T:0),y+(gyo>0?T:0),
+        x+(gxo>0?T-9:gxo<0?9:0),y+(gyo>0?T-9:gyo<0?9:0));
+      gr.addColorStop(0,'rgba(10,12,24,.30)');gr.addColorStop(1,'rgba(10,12,24,0)');
+      bgx.fillStyle=gr;bgx.fillRect(x,y,T,T);
+    }
+  }
+  // --- global lighting: warm from the light side, cool in the far corner ---
+  const vg=bgx.createRadialGradient(W*.3,H*.2,H*.2,W*.5,H*.55,H*1.15);
+  vg.addColorStop(0,'rgba(255,246,220,.14)');
+  vg.addColorStop(.55,'rgba(0,0,0,0)');
+  vg.addColorStop(1,'rgba(8,10,20,.45)');
+  bgx.fillStyle=vg;bgx.fillRect(0,0,W,H);
 }
 function drawIceTile(c,gx,gy,rnd){
   const x=gx*T,y=gy*T;

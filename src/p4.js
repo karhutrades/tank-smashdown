@@ -64,17 +64,17 @@ function startMatch(){
     tanks=[makeTank(0,sel[0].i,true,null,0,prof(0).color),
            makeTank(1,campCls,false,AI_LEVELS[st.ai],st.bonus,randomCpuColor())];
     tanks[1].tag='CPU';
-    mapIndex=st.map;
+    mapIndex=newArena({biome:BIOME_KEYS[campStage%BIOME_KEYS.length]});
   }else if(mode==='duel'){
     sel[1].i=randomCpuClass(sel[0].i);
     tanks=[makeTank(0,sel[0].i,true,null,0,prof(0).color),
            makeTank(1,sel[1].i,false,AI_LEVELS[aiLevel],0,randomCpuColor())];
     tanks[1].tag='CPU';
-    mapIndex=Math.random()*MAPS.length|0;
+    mapIndex=newArena();
   }else{
     tanks=[makeTank(0,sel[0].i,true,null,0,prof(0).color),
            makeTank(1,sel[1].i,true,null,0,prof(1).color)];
-    mapIndex=0;
+    mapIndex=newArena();
   }
   tanks.forEach(t=>{t.teamColor=t.profColor||TEAMS[t.team].color});
   startRound();

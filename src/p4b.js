@@ -103,15 +103,7 @@ function spawnWave(){
   sStar();
 }
 /* arenas for the free-for-all modes: skip the gate mazes */
-function randomArena(){
-  const ok=[];
-  MAPS.forEach((m,i)=>{
-    if(m.world==='stadium')return;
-    if(m.grid.some(r=>/[RLUD]/.test(r)))return;
-    ok.push(i);
-  });
-  return ok.length?ok[Math.random()*ok.length|0]:0;
-}
+function randomArena(){return newArena()}
 function farSpawn(){
   let best={x:W/2,y:H/2},bd=-1;
   for(let i=0;i<70;i++){
@@ -363,7 +355,4 @@ function setupMode(){
     if(k==='ball')resetBall(0);else moveZone();
   }
 }
-function pitchIndex(){
-  const i=MAPS.findIndex(m=>m.world==='stadium');
-  return i<0?0:i+(Math.random()<.5?0:1)%2;
-}
+function pitchIndex(){return newArena({pitch:true})}

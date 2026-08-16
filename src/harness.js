@@ -43,6 +43,7 @@ function boot(opts = {}) {
     get ball(){return ball}, get zone(){return zone}, get wave(){return wave}, get lives(){return lives},
     get score(){return score}, get goals(){return goals}, get caps(){return caps},
     setGoals:(a,b)=>{goals[0]=a;goals[1]=b}, setCaps:(a,b)=>{caps[0]=a;caps[1]=b},
+    newArena:o=>newArena(o), generateMap:(s,o)=>generateMap(s,o), connectedMap:m=>connected(m),
     setCoop:v=>{coopPlayers=v}, setupMode:()=>setupMode(), kindOf:()=>kindOf(),
     setAi:l=>{aiLevel=l}, startMatch:()=>startMatch(), startRound:()=>startRound(),
     damage:(t,d)=>damage(t,d,0,0), isUnlocked:(i,p)=>isUnlocked(i,p),

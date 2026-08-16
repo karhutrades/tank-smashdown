@@ -65,12 +65,12 @@ function stepSelect(){
   for(let p=0;p<n;p++){
     const k=KEYMAP[p],s=sel[p],pr=prof(p);
     if(!s.locked){
-      let col=s.i%8,row=(s.i/8)|0,moved=false;
-      if(pressQ.has(k.left)){col=(col+7)%8;moved=true}
-      if(pressQ.has(k.right)){col=(col+1)%8;moved=true}
+      let col=s.i%4,row=(s.i/4)|0,moved=false;
+      if(pressQ.has(k.left)){col=(col+3)%4;moved=true}
+      if(pressQ.has(k.right)){col=(col+1)%4;moved=true}
       if(pressQ.has(k.up)){row=(row+2)%3;moved=true}
       if(pressQ.has(k.down)){row=(row+1)%3;moved=true}
-      if(moved){s.i=row*8+col;sTick()}
+      if(moved){s.i=row*4+col;sTick()}
       if(pressQ.has(k.fire)){
         if(isUnlocked(s.i,pr)){s.locked=true;sLock();if(onLockIn)onLockIn(p)}
         else{toast={txt:'LOCKED · '+CLASSES[s.i].unlock.txt,life:150};sBack()}
@@ -178,53 +178,44 @@ let curTap=null;
 function tapIn(x,y,w,h){return curTap&&curTap.x>=x&&curTap.x<=x+w&&curTap.y>=y&&curTap.y<=y+h}
 function handleMenuTaps(){
   if(!curTap)return;
-  if(state==='title'||state==='game'||state==='round'){pressQ.add('Space');curTap=null;return}
+  const hit=(x,y,w,h)=>curTap.x>=x&&curTap.x<=x+w&&curTap.y>=y&&curTap.y<=y+h;
+  const go=()=>{pressQ.add('Space');curTap=null};
+  if(state==='title'||state==='game'||state==='round'){go();return}
   if(state==='mode'){
-    // must match drawMode's grid exactly
     const cw=280,ch=124,gx=14,gy=13,x0=(W-3*cw-2*gx)/2,y0=78;
     for(let i=0;i<MODES.length;i++){
       const x=x0+(i%3)*(cw+gx),y=y0+((i/3)|0)*(ch+gy);
-      if(tapIn(x,y,cw,ch)){
-        if(menuIdx===i)pressQ.add('Space');else{menuIdx=i;sTick()}
-        curTap=null;return;
-      }
+      if(hit(x,y,cw,ch)){menuIdx=i;sTick();go();return}   // one tap = go
     }
   }else if(state==='players'){
     for(let i=0;i<2;i++){
       const cw=300,ch=190,x=W/2-cw-20+i*(cw+40),y=150;
-      if(tapIn(x,y,cw,ch)){
-        if(subIdx===i)pressQ.add('Space');else{subIdx=i;sTick()}
-        curTap=null;return;
-      }
+      if(hit(x,y,cw,ch)){subIdx=i;sTick();go();return}
     }
   }else if(state==='difficulty'){
     const cw=250,gap=20,x0=(W-3*cw-2*gap)/2;
-    for(let i=0;i<3;i++){
-      if(tapIn(x0+i*(cw+gap),150,cw,220)){
-        if(subIdx===i)pressQ.add('Space');else{subIdx=i;sTick()}
-        curTap=null;return;
-      }
-    }
+    for(let i=0;i<3;i++)if(hit(x0+i*(cw+gap),150,cw,220)){subIdx=i;sTick();go();return}
   }else if(state==='campmenu'){
     const cols=8,cw=104,ch=74,gap=10,x0=(W-cols*cw-(cols-1)*gap)/2;
+    const maxStage=Math.min(prof(0).stats.campaign|0,MAPS.length-1);
     for(let i=0;i<MAPS.length;i++){
       const tx=x0+(i%cols)*(cw+gap),ty=132+((i/cols)|0)*(ch+gap);
-      if(tapIn(tx,ty,cw,ch)){
-        const maxStage=Math.min(prof(0).stats.campaign|0,MAPS.length-1);
+      if(hit(tx,ty,cw,ch)){
         if(i>maxStage){toast={txt:'CLEAR THE EARLIER STAGES FIRST',life:150};sBack()}
-        else if(subIdx===i)pressQ.add('Space');
-        else{subIdx=i;sTick()}
+        else{subIdx=i;sTick();go()}
         curTap=null;return;
       }
     }
-    if(curTap.y>420){pressQ.add('Space');curTap=null;return}
+    if(curTap.y>430){go();return}
   }else if(state==='select'){
-    const cw=110,ch=104,gapx=7,rowGap=26,x0=(W-8*cw-7*gapx)/2,y0=64;
+    const cw=204,ch=124,gapx=12,rowGap=24,x0=(W-4*cw-3*gapx)/2,y0=70;
+    const p2=participants()===2&&sel[0].locked?1:0;
+    // big LOCK IN button so there is never any doubt how to start
+    if(hit(W/2-110,H-40,220,34)){pressQ.add(KEYMAP[p2].fire);curTap=null;return}
     for(let i=0;i<CLASSES.length;i++){
-      const tx=x0+(i%8)*(cw+gapx),ty=y0+((i/8)|0)*(ch+rowGap);
-      if(tapIn(tx,ty,cw,ch)){
-        const p2=participants()===2&&sel[0].locked?1:0;
-        if(sel[p2].i===i)pressQ.add(KEYMAP[p2].fire);
+      const tx=x0+(i%4)*(cw+gapx),ty=y0+((i/4)|0)*(ch+rowGap);
+      if(hit(tx,ty,cw,ch)){
+        if(sel[p2].i===i)pressQ.add(KEYMAP[p2].fire);      // tap again to lock
         else if(!sel[p2].locked){sel[p2].i=i;sTick()}
         curTap=null;return;
       }
@@ -233,14 +224,22 @@ function handleMenuTaps(){
     for(let team=0;team<2;team++){
       const x=team===0?60:W/2+16,w=W/2-76,y=92;
       for(let f=0;f<4;f++){
-        if(tapIn(x+16,y+316+f*26-12,w-32,24)){
-          if(profTeam===team&&profField===f)pressQ.add('Space');
-          else{profTeam=team;profField=f;sTick()}
+        if(hit(x+16,y+316+f*26-12,w-32,24)){
+          profTeam=team;profField=f;sTick();
+          if(f===2||f===3)go();else{
+            // profile + colour cycle on tap
+            const p=profiles[slots[team]];
+            if(f===0)slots[team]=(slots[team]+1)%profiles.length;
+            else{const ci=Math.max(0,SWATCHES.indexOf(p.color));p.color=SWATCHES[(ci+1)%SWATCHES.length]}
+            saveProfiles();
+          }
           curTap=null;return;
         }
       }
-      if(tapIn(x,y,w,300)&&profTeam!==team){profTeam=team;sTick();curTap=null;return}
+      if(hit(x,y,w,300)&&profTeam!==team){profTeam=team;sTick();curTap=null;return}
     }
+  }else if(state==='name'){
+    go();return;
   }
   curTap=null;
 }
@@ -256,6 +255,7 @@ function step(){
   if(marks.length>240)marks.splice(0,marks.length-240);
   if(toast&&--toast.life<=0)toast=null;
   if(ann&&--ann.life<=0)ann=null;
+  if(TOUCH.flash&&--TOUCH.flash.life<=0)TOUCH.flash=null;
   if(shake>0)shake*=.86;
   if(flash>0)flash=Math.max(0,flash-.06);
   for(let i=rings.length-1;i>=0;i--){const rg=rings[i];rg.r+=rg.vr;if(--rg.life<=0)rings.splice(i,1)}

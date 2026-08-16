@@ -92,11 +92,10 @@ function drawTitle(){
     cx.restore();
   }
   // roster strip: the whole garage, two rows
-  const cw=56,x0=W/2-(12*cw)/2;
+  const cw=62,x0=W/2-(CLASSES.length*cw)/2;
   for(let i=0;i<CLASSES.length;i++){
-    const c=CLASSES[i],row=(i/12)|0;
-    const y=442+row*42+bounce(i*.7,.09);
-    drawBadge(x0+(i%12)*cw+cw/2,y,17,c,null,'',0,0);
+    const c=CLASSES[i],y=452+bounce(i*.7,.09);
+    drawBadge(x0+i*cw+cw/2,y,20,c,null,'',0,0);
   }
   label(MAPS.length+' ARENAS   ·   '+CLASSES.length+' TANKS   ·   '+POWERS.length+' POWERUPS',W/2,524,13,'#c9c4ae');
   if((frame/30|0)%2===0){
@@ -333,68 +332,72 @@ function drawOnline(){
   footer('BACK: SPACE / ENTER / ESC');
 }
 
-/* ---------------- tank select: the full garage ---------------- */
+/* ---------------- tank select: the garage ---------------- */
 function drawSelect(){
-  screenBg('#232744');
-  splash('CHOOSE YOUR TANK',36,32);
-  const cw=110,ch=104,gapx=7,rowGap=26,x0=(W-8*cw-7*gapx)/2,y0=64;
+  screenBg('#222741');
+  splash('CHOOSE YOUR TANK',34,28);
+  const cw=204,ch=124,gapx=12,rowGap=24,x0=(W-4*cw-3*gapx)/2,y0=70;
   for(let i=0;i<CLASSES.length;i++){
-    const col=i%8,row=(i/8)|0,c=CLASSES[i];
+    const col=i%4,row=(i/4)|0,c=CLASSES[i];
     const x=x0+col*(cw+gapx),y=y0+row*(ch+rowGap);
-    if(col===0)label(TABS[row],x0+2,y-9,11,'#9aa0b8','left');
+    if(col===0)label(TABS[row],x0+2,y-11,11,'#9aa0b8','left');
     const p0=prof(0),p1=prof(1);
     const lockedAll=!isUnlocked(i,p0)&&(participants()===1||!isUnlocked(i,p1));
-    panel(x,y,cw,ch,c.color,12);
-    drawBadge(x+cw/2,y+52,23,c,null,'',0,0);
-    cx.fillStyle='#fff';cx.font='900 10.5px system-ui,Arial,sans-serif';
-    cx.textAlign='center';cx.textBaseline='middle';
-    cx.lineWidth=3;cx.strokeStyle=INK;cx.strokeText(c.name,x+cw/2,y+15);cx.fillText(c.name,x+cw/2,y+15);
-    label('HP '+c.hp,x+cw/2,y+90,9,'#8a8672');
-    if(lockedAll){
-      cx.fillStyle='rgba(24,26,44,.74)';rr(cx,x,y,cw,ch,12);cx.fill();
-      cx.strokeStyle=INK;cx.lineWidth=3;rr(cx,x,y,cw,ch,12);cx.stroke();
-      cx.fillStyle=CREAM;rr(cx,x+cw/2-10,y+42,20,17,4);cx.fill();
-      cx.strokeStyle=INK;cx.lineWidth=2.5;rr(cx,x+cw/2-10,y+42,20,17,4);cx.stroke();
-      cx.strokeStyle=CREAM;cx.beginPath();cx.arc(x+cw/2,y+42,6.5,Math.PI,0);cx.lineWidth=3;cx.stroke();
-      label(c.unlock?c.unlock.txt:'LOCKED',x+cw/2,y+74,7.5,'#ffd166');
-    }
-    for(let p=0;p<participants();p++){
-      if(sel[p].i!==i)continue;
-      const off=p===0?3:(sel[0].i===sel[1].i?8:3),col2=prof(p).color;
-      selectRing(x-off+3,y-off+3,cw+off*2-6,ch+off*2-6,col2,12);
-      cx.fillStyle=col2;rr(cx,x-off+(p===0?-4:cw-34),y-off-9,40,18,7);cx.fill();
-      cx.lineWidth=2.5;cx.strokeStyle=INK;rr(cx,x-off+(p===0?-4:cw-34),y-off-9,40,18,7);cx.stroke();
-      label((sel[p].locked?'✔':'')+prof(p).name.slice(0,4),x-off+(p===0?16:cw-14),y-off,9,'#fff');
-    }
-  }
-  // detail panels: what the highlighted tank actually does
-  const twoP=participants()===2;
-  for(let p=0;p<(twoP?2:1);p++){
-    const c=CLASSES[sel[p].i],px=twoP?(p===0?14:W/2+7):14,pw=twoP?W/2-21:W/2+40,py=H-92,ph2=62;
-    panel(px,py,pw,ph2,c.color,12);
-    label(c.name+(isUnlocked(sel[p].i,prof(p))?'':'  ·  LOCKED'),px+12,py+15,12,'#fff','left');
-    label(c.desc,px+12,py+38,11,INK,'left');
-    label('★ '+c.perk,px+12,py+53,10,'#b3202c','left');
+    panel(x,y,cw,ch,c.color,14);
+    cx.fillStyle='#fff';cx.font='900 13px system-ui,Arial,sans-serif';
+    cx.textAlign='left';cx.textBaseline='middle';
+    cx.lineWidth=3;cx.strokeStyle=INK;
+    cx.strokeText(c.name,x+12,y+16);cx.fillText(c.name,x+12,y+16);
+    // the tank itself, big enough to read its shape
+    cx.save();cx.translate(x+54,y+76);cx.scale(1.35,1.35);
+    drawTankBody({x:0,y:0,ang:-.35,cls:c,recoil:0,dist:frame*1.5});
+    cx.restore();
     const labels=['SPD','ARM','POW'];
-    for(let st=0;st<3;st++){
-      const lx=px+pw-118,ly=py+26+st*13;
-      label(labels[st],lx-8,ly,8.5,'#8a8672','right');
+    for(let s2=0;s2<3;s2++){
+      const ly=y+44+s2*20;
+      label(labels[s2],x+106,ly,9,'#8a8672','left');
       for(let q=0;q<5;q++){
-        cx.fillStyle=q<c.pips[st]?c.color:'#d8cbb4';
-        cx.beginPath();cx.arc(lx+8+q*15,ly,4.4,0,Math.PI*2);cx.fill();
+        cx.fillStyle=q<c.pips[s2]?c.color:'#d8cbb4';
+        cx.beginPath();cx.arc(x+134+q*13,ly,4.2,0,Math.PI*2);cx.fill();
         cx.lineWidth=1.4;cx.strokeStyle=INK;cx.stroke();
       }
     }
+    label('HP '+c.hp,x+cw-12,y+16,10,'rgba(255,255,255,.85)','right');
+    label(c.desc,x+12,y+ch-14,9.5,INK,'left');
+    if(lockedAll){
+      cx.fillStyle='rgba(22,24,42,.78)';rr(cx,x,y,cw,ch,14);cx.fill();
+      cx.strokeStyle=INK;cx.lineWidth=3.5;rr(cx,x,y,cw,ch,14);cx.stroke();
+      cx.fillStyle=CREAM;rr(cx,x+cw/2-11,y+ch/2-4,22,18,4);cx.fill();
+      cx.lineWidth=2.5;cx.strokeStyle=INK;rr(cx,x+cw/2-11,y+ch/2-4,22,18,4);cx.stroke();
+      cx.strokeStyle=CREAM;cx.lineWidth=3;
+      cx.beginPath();cx.arc(x+cw/2,y+ch/2-4,7,Math.PI,0);cx.stroke();
+      label(c.unlock?c.unlock.txt:'LOCKED',x+cw/2,y+ch-22,9.5,'#ffd166');
+    }
+    for(let p=0;p<participants();p++){
+      if(sel[p].i!==i)continue;
+      const off=p===0?4:(sel[0].i===sel[1].i?10:4),col2=prof(p).color;
+      selectRing(x-off+4,y-off+4,cw+off*2-8,ch+off*2-8,col2,14);
+      cx.fillStyle=col2;rr(cx,x-off+(p===0?-2:cw-44),y-off-10,50,20,8);cx.fill();
+      cx.lineWidth=2.5;cx.strokeStyle=INK;rr(cx,x-off+(p===0?-2:cw-44),y-off-10,50,20,8);cx.stroke();
+      label((sel[p].locked?'✔':'')+prof(p).name.slice(0,5),x-off+(p===0?23:cw-19),y-off,9.5,'#fff');
+    }
   }
-  if(!twoP){
-    const px=W/2+47,pw=W/2-61,py=H-92;
-    panel(px,py,pw,62,'#454458',12);
-    if(mode==='duel')label('OPPONENT: RANDOM CPU  ·  '+AI_LEVELS[aiLevel].name,px+pw/2,py+32,12,INK);
-    else{const st=campaignStage(campStage);
-      label('STAGE '+(campStage+1)+'  ·  '+MAPS[st.map].name+'  ·  '+AI_LEVELS[st.ai].name,px+pw/2,py+32,12,INK)}
-  }
+  // the highlighted tank explained
+  const p2=participants()===2&&sel[0].locked?1:0;
+  const c2=CLASSES[sel[p2].i];
+  panel(14,H-84,W-28,40,c2.color,12);
+  label(c2.name+'  ·  '+c2.desc,26,H-64,13,'#fff','left');
+  label('★ '+c2.perk,W-26,H-64,12,'#fff','right');
   if(allLocked())splash("LET'S GO!!",30,H-16,-.03,'#ffd166');
-  else footer(TOUCH.on?'TAP A TANK, TAP AGAIN TO LOCK IN':'MOVE: WASD / ARROWS      LOCK IN: SPACE / ENTER      BACK: ESC');
+  else{
+    const bx=W/2-110,by=H-40,bw=220,bh=34;
+    cx.fillStyle='rgba(12,14,26,.4)';rr(cx,bx+3,by+4,bw,bh,17);cx.fill();
+    const g=cx.createLinearGradient(0,by,0,by+bh);
+    g.addColorStop(0,shade(prof(p2).color,.3));g.addColorStop(1,prof(p2).color);
+    cx.fillStyle=g;rr(cx,bx,by,bw,bh,17);cx.fill();
+    cx.lineWidth=3.5;cx.strokeStyle=INK;rr(cx,bx,by,bw,bh,17);cx.stroke();
+    label('LOCK IN '+prof(p2).name.slice(0,8),W/2,by+bh/2+1,14,'#fff');
+  }
   drawToast();
 }
 
@@ -591,7 +594,17 @@ function draw(){
 }
 
 /* ---------------- touch overlay: stick, fire, corner buttons ---------------- */
+function drawTapFlash(){
+  const f=TOUCH.flash;
+  if(!f)return;
+  const k=1-f.life/16;
+  cx.save();cx.globalAlpha=(1-k)*.55;
+  cx.strokeStyle='#fff';cx.lineWidth=3;
+  cx.beginPath();cx.arc(f.x,f.y,12+k*26,0,Math.PI*2);cx.stroke();
+  cx.restore();
+}
 function drawTouchUI(){
+  drawTapFlash();
   if(!TOUCH.on)return;
   cx.save();
   // phone co-op: a stick per side and a soft centre line
