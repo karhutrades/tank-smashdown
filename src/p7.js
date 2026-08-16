@@ -280,8 +280,8 @@ function drawSelect(){
         cx.lineWidth=1.5;cx.strokeStyle=INK;cx.stroke();
       }
     }
-    label(c.desc,x+104,y+108,11,INK,'left');
-    label('HP '+c.hp,x+104,y+126,10,'#8a8672','left');
+    label(c.desc+'  ·  HP '+c.hp,x+104,y+104,10.5,INK,'left');
+    label('★ '+c.perk,x+104,y+122,9.5,'#b3202c','left');
     // lock overlay
     const p0=prof(0),p1=prof(1);
     const lockedFor=[!isUnlocked(i,p0),!isUnlocked(i,p1)];

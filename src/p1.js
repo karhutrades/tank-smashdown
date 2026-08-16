@@ -8,26 +8,26 @@ const SWATCHES=['#ef3e4a','#ff8c42','#ffd23f','#35a44a','#2ec4b6','#3d7ea6','#a0
 
 /* ---------------- guns & tank classes ---------------- */
 const GUNS={
-  rapid:   {cd:10,maxLive:4,dmg:1,spd:8.5,br:4,jitter:.09,knock:6,range:340},
-  cannon:  {cd:22,maxLive:3,dmg:1,spd:7.5,br:5,knock:9,range:420},
-  shell:   {cd:46,maxLive:2,dmg:2,spd:5.5,br:8,knock:15,range:380},
-  sniper:  {cd:55,maxLive:1,dmg:2,spd:13,br:4.5,knock:12,trail:1,range:700},
-  scatter: {cd:38,maxLive:6,dmg:1,spd:7,br:4,pellets:3,spread:.24,life:26,knock:7,range:180},
-  ricochet:{cd:26,maxLive:2,dmg:1,spd:7.2,br:5,bounces:2,knock:9,range:420},
-  mortar:  {cd:60,maxLive:2,dmg:2,spd:6,br:7,air:1,life:50,aoe:48,knock:12,range:300},
-  flame:   {cd:4,maxLive:10,dmg:1,spd:5.5,br:4,jitter:.35,life:13,knock:2,range:75},
-  phase:   {cd:42,maxLive:1,dmg:1,spd:5.2,br:5.5,phase:1,knock:8,range:500},
+  rapid:   {cd:9,maxLive:5,dmg:1,spd:8.8,br:4,jitter:.09,knock:6,range:360},
+  cannon:  {cd:28,maxLive:3,dmg:1,spd:7.3,br:5,knock:9,range:420},
+  shell:   {cd:42,maxLive:2,dmg:2,spd:6,br:8,knock:15,range:400},
+  sniper:  {cd:48,maxLive:1,dmg:2,spd:13,br:4.5,knock:12,trail:1,range:700},
+  scatter: {cd:28,maxLive:12,dmg:1,spd:7.6,br:5,pellets:4,spread:.26,life:30,knock:8,range:230},
+  ricochet:{cd:31,maxLive:2,dmg:1,spd:6.8,br:5,bounces:2,knock:9,range:420},
+  mortar:  {cd:86,maxLive:1,dmg:2,spd:6,br:7,air:1,life:50,aoe:38,knock:12,range:400,minR:90,fuseErr:150},
+  flame:   {cd:4,maxLive:14,dmg:1,spd:7,br:4.5,jitter:.26,life:20,knock:2,range:155},
+  phase:   {cd:44,maxLive:1,dmg:2,spd:6.6,br:5.5,phase:1,knock:10,range:520},
 };
 const CLASSES=[
-  {name:'SCOUT',   skin:'scout',   gun:'rapid',   color:'#ffd23f',dark:'#cba317',light:'#ffe89a',hp:4,speed:3.9,radius:14,  bl:20,desc:'TWIN RAPID GUNS',     pips:[5,2,2],unlock:null},
-  {name:'BRAWLER', skin:'brawler', gun:'cannon',  color:'#ef3e4a',dark:'#b3202c',light:'#ff7d85',hp:5,speed:3.1,radius:15,  bl:26,desc:'BALANCED CANNON',     pips:[3,3,3],unlock:null},
-  {name:'TITAN',   skin:'titan',   gun:'shell',   color:'#3d7ea6',dark:'#2a5f80',light:'#6fb0d8',hp:7,speed:2.4,radius:17,  bl:24,desc:'HEAVY SHELL · 2 DMG', pips:[1,5,5],unlock:null},
-  {name:'LONGSHOT',skin:'longshot',gun:'sniper',  color:'#35a44a',dark:'#1f7c32',light:'#6cd07e',hp:4,speed:3.3,radius:14,  bl:34,desc:'SNIPER ROUND · 2 DMG',pips:[3,2,4],unlock:null},
-  {name:'SCATTER', skin:'scatter', gun:'scatter', color:'#ff8c42',dark:'#d3652a',light:'#ffb27a',hp:5,speed:3.0,radius:15,  bl:18,desc:'TRIPLE SPREAD SHOT',  pips:[3,3,4],unlock:{k:'wins',n:2, txt:'WIN 2 MATCHES'}},
-  {name:'RICOCHET',skin:'ricochet',gun:'ricochet',color:'#2ec4b6',dark:'#1e8f85',light:'#6ce4d8',hp:5,speed:3.2,radius:15,  bl:24,desc:'BOUNCES OFF WALLS',   pips:[4,3,3],unlock:{k:'kos', n:15,txt:'SCORE 15 KOs'}},
-  {name:'BOMBARD', skin:'bombard', gun:'mortar',  color:'#8a9a2f',dark:'#66741f',light:'#c3d45e',hp:5,speed:2.7,radius:16,  bl:16,desc:'LOBS OVER WALLS',     pips:[2,4,4],unlock:{k:'campaign',n:4,txt:'CLEAR 4 CAMPAIGN STAGES'}},
-  {name:'BLAZE',   skin:'blaze',   gun:'flame',   color:'#d95d39',dark:'#a83f22',light:'#f28f6e',hp:5,speed:3.4,radius:14.5,bl:18,desc:'SHORT RANGE FLAME',   pips:[4,3,3],unlock:{k:'wins',n:6, txt:'WIN 6 MATCHES'}},
-  {name:'PHANTOM', skin:'phantom', gun:'phase',   color:'#8d99ae',dark:'#5f6b80',light:'#c3ccdd',hp:4,speed:3.3,radius:14.5,bl:24,desc:'SHOOTS THROUGH WALLS',pips:[3,2,4],unlock:{k:'campaign',n:9,txt:'CLEAR 9 CAMPAIGN STAGES'}},
+  {name:'SCOUT',   skin:'scout',   gun:'rapid',   color:'#ffd23f',dark:'#cba317',light:'#ffe89a',hp:4,speed:3.9,radius:14,  bl:20,desc:'TWIN RAPID GUNS',     pips:[5,2,2],perk:'GUN SPINS UP AS YOU HOLD FIRE',unlock:null},
+  {name:'BRAWLER', skin:'brawler', gun:'cannon',  color:'#ef3e4a',dark:'#b3202c',light:'#ff7d85',hp:5,speed:3.1,radius:15,  bl:26,desc:'BALANCED CANNON',     pips:[3,3,3],perk:'EVERY 4TH SHELL IS HEAVY',unlock:null},
+  {name:'TITAN',   skin:'titan',   gun:'shell',   color:'#3d7ea6',dark:'#2a5f80',light:'#6fb0d8',hp:7,speed:2.4,radius:17,  bl:24,desc:'HEAVY SHELL · 2 DMG', pips:[1,5,5],perk:'BARELY MOVED BY HITS',unlock:null},
+  {name:'LONGSHOT',skin:'longshot',gun:'sniper',  color:'#35a44a',dark:'#1f7c32',light:'#6cd07e',hp:4,speed:3.3,radius:14,  bl:34,desc:'SNIPER · 1-3 DMG BY RANGE',pips:[3,2,4],perk:'DAMAGE GROWS WITH DISTANCE',unlock:null},
+  {name:'SCATTER', skin:'scatter', gun:'scatter', color:'#ff8c42',dark:'#d3652a',light:'#ffb27a',hp:5,speed:3.0,radius:15,  bl:18,desc:'TRIPLE SPREAD SHOT',  pips:[3,3,4],perk:'STAND STILL FOR A TIGHT SPREAD',unlock:{k:'wins',n:2, txt:'WIN 2 MATCHES'}},
+  {name:'RICOCHET',skin:'ricochet',gun:'ricochet',color:'#2ec4b6',dark:'#1e8f85',light:'#6ce4d8',hp:5,speed:3.2,radius:15,  bl:24,desc:'BOUNCES OFF WALLS',   pips:[4,3,3],perk:'BOUNCED SHOTS HIT HARDER',unlock:{k:'kos', n:15,txt:'SCORE 15 KOs'}},
+  {name:'BOMBARD', skin:'bombard', gun:'mortar',  color:'#8a9a2f',dark:'#66741f',light:'#c3d45e',hp:5,speed:2.7,radius:16,  bl:16,desc:'LOBS OVER WALLS',     pips:[2,4,4],perk:'HOLD FIRE TO AIM THE ARC, RELEASE TO LOB',unlock:{k:'campaign',n:4,txt:'CLEAR 4 CAMPAIGN STAGES'}},
+  {name:'BLAZE',   skin:'blaze',   gun:'flame',   color:'#d95d39',dark:'#a83f22',light:'#f28f6e',hp:5,speed:3.4,radius:14.5,bl:18,desc:'SHORT RANGE FLAME',   pips:[4,3,3],perk:'FLAMES LEAVE BURNING GROUND',unlock:{k:'wins',n:6, txt:'WIN 6 MATCHES'}},
+  {name:'PHANTOM', skin:'phantom', gun:'phase',   color:'#8d99ae',dark:'#5f6b80',light:'#c3ccdd',hp:5,speed:3.3,radius:14.5,bl:24,desc:'2 DMG THROUGH WALLS',pips:[3,3,4],perk:'EACH SHOT PHASES YOU THROUGH WALLS',unlock:{k:'campaign',n:9,txt:'CLEAR 9 CAMPAIGN STAGES'}},
 ];
 
 /* ---------------- pilots: a drawn character per tank ----------------
@@ -231,6 +231,7 @@ function jingle(midis,gap,wave,vol){
 const jWin=()=>jingle([72,76,79,84],.11,'square',.12);
 const jGame=()=>jingle([72,76,79,84,88,84,91],.12,'square',.13);
 const sCd=()=>sfx(440,440,.09,'square',.13);
+const sChg=p=>sfx(220+p*420,220+p*420,.05,'triangle',.07);
 const sCdGo=()=>sfx(880,880,.3,'square',.15);
 
 /* ---------------- input ---------------- *//* ---------------- input ---------------- */

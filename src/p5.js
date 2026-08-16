@@ -163,7 +163,15 @@ function step(){
   if(toast&&--toast.life<=0)toast=null;
   if(shake>0)shake*=.86;
   if(flash>0)flash=Math.max(0,flash-.06);
-  for(const t of tanks)if(t.squash>0)t.squash=Math.max(0,t.squash-.09);
+  for(let i=rings.length-1;i>=0;i--){const rg=rings[i];rg.r+=rg.vr;if(--rg.life<=0)rings.splice(i,1)}
+  for(const t of tanks){
+    if(t.squash>0)t.squash=Math.max(0,t.squash-.09);
+    if(t.lastRoll&&t.lastRoll.ttl>0)t.lastRoll.ttl--;
+    // battle damage: low tanks trail smoke
+    if(t.hp>0&&t.hp<=2&&frame%7===0&&['play','round'].includes(state))
+      parts.push({x:t.x+(Math.random()-.5)*10,y:t.y-4,vx:(Math.random()-.5)*.4,vy:-.8,
+        life:34,color:'smoke',size:4+Math.random()*3});
+  }
   stepAmbient();
   if(hitstop>0){hitstop--;pressQ.clear();return}
   if(state==='title')stepTitle();
@@ -208,7 +216,15 @@ function drawDynamicTiles(){
       cx.strokeStyle=m.liqB;cx.lineWidth=2.5;
       cx.beginPath();cx.arc(x+12+Math.sin(ph)*3,y+14,6,Math.PI*.15,Math.PI*.85);cx.stroke();
       cx.beginPath();cx.arc(x+28+Math.cos(ph)*3,y+28,6,Math.PI*.15,Math.PI*.85);cx.stroke();
-      if(m.world==='volcano'&&Math.random()<.004)burst(x+Math.random()*T,y+Math.random()*T,'#ffd166',1,1.5);
+      if(m.world==='volcano'){
+        cx.save();cx.globalCompositeOperation='lighter';
+        cx.globalAlpha=.10+.06*Math.sin(frame*.07+gx*1.3+gy*.8);
+        cx.fillStyle='#ff8c42';cx.fillRect(x,y,T,T);
+        cx.restore();
+        if(Math.random()<.004)burst(x+Math.random()*T,y+Math.random()*T,'#ffd166',1,1.5);
+      }else if(Math.random()<.002){
+        parts.push({x:x+Math.random()*T,y:y+Math.random()*T,vx:0,vy:0,life:14,color:'#ffffff',size:1.6});
+      }
     }else if(c==='o'){
       const cxp=x+T/2,cyp=y+T/2;
       cx.fillStyle='#ef3e4a';cx.beginPath();cx.arc(cxp,cyp,13,0,Math.PI*2);cx.fill();

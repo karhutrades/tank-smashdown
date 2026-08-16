@@ -32,6 +32,9 @@ function drawTankBody(o){
   cx.fillStyle='rgba(255,255,255,.28)';rr(cx,-r*.82,-r*.62,r*1.64,r*.44,r*.2);cx.fill();
   cx.fillStyle='rgba(20,22,40,.16)';rr(cx,-r*.82,r*.2,r*1.64,r*.36,r*.16);cx.fill();
   cx.fillStyle=c.dark;rr(cx,-r-4,-4.5,6,9,2.5);cx.fill();cx.stroke(); // exhaust
+  cx.strokeStyle='rgba(20,22,40,.28)';cx.lineWidth=1.6;
+  cx.beginPath();cx.moveTo(-r*.4,-r*.74);cx.lineTo(-r*.4,r*.74);cx.moveTo(r*.45,-r*.74);cx.lineTo(r*.45,r*.74);cx.stroke();
+  cx.strokeStyle=INK;cx.lineWidth=3.4;
   cx.restore();
   // barrel + muzzle flash follow the turret so shots go where the pilot looks
   cx.save();cx.translate(o.x,o.y);cx.scale(1+sq*.22,1-sq*.22);cx.rotate(ta);
@@ -91,13 +94,22 @@ function drawTankBody(o){
   cx.fillStyle=cg;cx.fillRect(-tr,-tr,tr*2,tr*2);
   cx.translate(0,tr*.16);
   drawFace(PILOTS[c.skin]||PILOTS.brawler,tr*.9,(o.inv>0?'hurt':o.mood||''),
-    Math.cos(o.ang),Math.sin(o.ang),(frame+(o.team||0)*77)%210<7);
+    Math.cos(o.tang==null?o.ang:o.tang),Math.sin(o.tang==null?o.ang:o.tang),(frame+(o.team||0)*77)%210<7);
   cx.restore();
   cx.beginPath();cx.arc(0,0,tr,0,Math.PI*2);cx.lineWidth=3.2;cx.strokeStyle=INK;cx.stroke();
   const ring=o.teamColor||(o.team!==undefined?TEAMS[o.team].color:null);
   if(ring){cx.lineWidth=2.6;cx.strokeStyle=ring;cx.beginPath();cx.arc(0,0,tr+4.5,0,Math.PI*2);cx.stroke()}
   cx.fillStyle='rgba(255,255,255,.4)';
   cx.beginPath();cx.ellipse(-tr*.4,-tr*.5,tr*.34,tr*.2,-.5,0,Math.PI*2);cx.fill();
+  // aerial with a little waving pennant in the team colour
+  if(ring){
+    const ax=tr*.72,ay=-tr*.72,wob=Math.sin(frame*.16+(o.team||0)*3)*2.5;
+    cx.strokeStyle=INK;cx.lineWidth=2;
+    cx.beginPath();cx.moveTo(ax,ay);cx.lineTo(ax+4,ay-13);cx.stroke();
+    cx.fillStyle=ring;cx.strokeStyle=INK;cx.lineWidth=1.8;
+    cx.beginPath();cx.moveTo(ax+4,ay-13);cx.lineTo(ax+15+wob,ay-10);cx.lineTo(ax+4,ay-6);cx.closePath();
+    cx.fill();cx.stroke();
+  }
   cx.restore();
   if(fx){
     if(o.shield>0){
@@ -177,6 +189,15 @@ function drawArenaFrame(){
   cx.globalAlpha=1;
   drawBullets();
   tanks.forEach(drawTank);
+  for(const t of tanks){
+    if(!(t.lock>14)||t.ai)continue;
+    const e=tanks[1-t.team];
+    if(!e||e.hp<=0)continue;
+    const rr2=e.cls.radius+13,a0=frame*.06;
+    cx.save();cx.globalAlpha=.5;cx.strokeStyle=t.teamColor;cx.lineWidth=3;cx.lineCap='round';
+    for(let k=0;k<4;k++){cx.beginPath();cx.arc(e.x,e.y,rr2,a0+k*Math.PI/2,a0+k*Math.PI/2+.5);cx.stroke()}
+    cx.restore();
+  }
   drawBushes();
   drawAmbient();
   for(const f of floats){
@@ -191,7 +212,14 @@ function drawArenaFrame(){
 /* ---------------- HUD ---------------- */
 function hudPlate(t,left){
   const w=216,h=62,x=left?14:W-14-w,y=H-h-12;
+  let near=false;
+  for(const k of tanks){
+    if(k.hp<=0)continue;
+    if(k.x>x-70&&k.x<x+w+70&&k.y>y-60)near=true;
+  }
+  t.plateA=t.plateA==null?1:t.plateA+((near?.22:1)-t.plateA)*.15;
   cx.save();
+  cx.globalAlpha=t.plateA;
   cx.fillStyle='rgba(34,35,59,.25)';rr(cx,x+4,y+5,w,h,12);cx.fill();
   cx.fillStyle=CREAM;rr(cx,x,y,w,h,12);cx.fill();
   cx.lineWidth=3.5;cx.strokeStyle=INK;rr(cx,x,y,w,h,12);cx.stroke();
@@ -229,6 +257,40 @@ function hudPlate(t,left){
     cx.lineWidth=2;cx.strokeStyle=p.color;cx.stroke();
     cx.fillStyle=p.color;cx.font='900 10px system-ui,Arial,sans-serif';cx.textAlign='center';
     cx.fillText(p.glyph,chx+8,chy+1);
+  }
+  // the item slot sits beside the plate and spins like a kart item box
+  cx.globalAlpha=1;
+  const spin=t.roul,landed=t.lastRoll&&t.lastRoll.ttl>0;
+  if(spin||landed){
+    const sw=54,sx=left?x+w+10:x-10-sw,sy=y+h-sw;
+    const pop=landed?1+Math.max(0,(t.lastRoll.ttl-92)/18)*.35:1;
+    cx.save();cx.translate(sx+sw/2,sy+sw/2);cx.scale(pop,pop);
+    cx.fillStyle='rgba(12,14,26,.4)';rr(cx,-sw/2+4,-sw/2+5,sw,sw,12);cx.fill();
+    const gg=cx.createLinearGradient(0,-sw/2,0,sw/2);
+    gg.addColorStop(0,'#fffaf0');gg.addColorStop(1,'#efe2c8');
+    cx.fillStyle=gg;rr(cx,-sw/2,-sw/2,sw,sw,12);cx.fill();
+    cx.strokeStyle=INK;cx.lineWidth=3.5;rr(cx,-sw/2,-sw/2,sw,sw,12);cx.stroke();
+    cx.save();cx.beginPath();rr(cx,-sw/2+5,-sw/2+5,sw-10,sw-10,8);cx.clip();
+    if(spin){
+      const ph=(spin.n%6)/6;
+      for(let k=-1;k<=1;k++){
+        const p=POWERS[(spin.idx+k+POWERS.length)%POWERS.length];
+        cx.fillStyle=p.color;cx.font='900 22px system-ui,Arial,sans-serif';
+        cx.textAlign='center';cx.textBaseline='middle';cx.fillText(p.glyph,0,(k+ph)*30);
+      }
+    }else{
+      const p=t.lastRoll.def;
+      cx.fillStyle=p.color;cx.font='900 26px system-ui,Arial,sans-serif';
+      cx.textAlign='center';cx.textBaseline='middle';cx.fillText(p.glyph,0,0);
+    }
+    cx.restore();
+    if(landed){
+      cx.lineWidth=3;cx.strokeStyle=t.lastRoll.def.color;
+      rr(cx,-sw/2+3,-sw/2+3,sw-6,sw-6,10);cx.stroke();
+      cx.fillStyle=INK;cx.font='800 9px system-ui,Arial,sans-serif';cx.textAlign='center';
+      cx.fillText(t.lastRoll.def.label,0,sw/2+10);
+    }
+    cx.restore();
   }
   cx.restore();
 }

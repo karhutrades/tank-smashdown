@@ -1,5 +1,5 @@
 /* ---------------- state ---------------- */
-let tanks=[],bullets=[],parts=[],mines=[],pickups=[],floats=[],marks=[],amb=[],conf=[];
+let tanks=[],bullets=[],parts=[],mines=[],pickups=[],floats=[],marks=[],amb=[],conf=[],rings=[],burns=[];
 let shake=0,hitstop=0,frame=0;
 let state='title',timer=0,mapIndex=0,roundWinner=null;
 let cells=null,crateHp=null,movers=[],portals={},readyPinged=false,goPinged=false;
@@ -138,6 +138,7 @@ function burst(x,y,color,n,pow){
     parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:20+Math.random()*22,color,size:3+Math.random()*4});}
 }
 function addFloat(x,y,txt,color){floats.push({x,y,txt,color,life:60})}
+function ring(x,y,color,speed,width){rings.push({x,y,r:6,vr:speed||4,life:22,color:color||'#fff',w:width||4})}
 
 /* ---------------- movers ---------------- */
 function moverOff(mv,f){
@@ -211,6 +212,17 @@ function prerenderArena(m,mi){
     bgx.fillRect(gx*T,gy*T,T,T);
   }
   let s=mi*137+11;const rnd=()=>(s=(s*1103515245+12345)&0x7fffffff)/0x7fffffff;
+  // ground grain: brightness variance + speckle so the floor reads as material
+  for(let gy=0;gy<ROWS;gy++)for(let gx=0;gx<COLS;gx++){
+    if(m.grid[gy][gx]!=='.')continue;
+    const x=gx*T,y=gy*T;
+    if(rnd()<.5){bgx.fillStyle='rgba(255,255,255,'+(rnd()*.04).toFixed(3)+')';bgx.fillRect(x,y,T,T)}
+    else{bgx.fillStyle='rgba(20,22,40,'+(rnd()*.05).toFixed(3)+')';bgx.fillRect(x,y,T,T)}
+    for(let k=0;k<3;k++){
+      bgx.fillStyle=rnd()<.5?'rgba(255,255,255,.05)':'rgba(20,22,40,.06)';
+      bgx.fillRect(x+rnd()*T,y+rnd()*T,2,2);
+    }
+  }
   for(let gy=1;gy<ROWS-1;gy++)for(let gx=1;gx<COLS-1;gx++){
     const c=m.grid[gy][gx];
     if(c==='.'&&rnd()<.09)drawDecal(bgx,m.decal,gx*T+8+rnd()*(T-16),gy*T+8+rnd()*(T-16),rnd);
@@ -220,6 +232,18 @@ function prerenderArena(m,mi){
   for(let gy=0;gy<ROWS;gy++)for(let gx=0;gx<COLS;gx++){
     if(m.grid[gy][gx]!=='~')continue;
     bgx.fillStyle=m.liqA;bgx.fillRect(gx*T,gy*T,T,T);
+  }
+  // foam line just inside every shore, then the ink edge
+  for(let gy=0;gy<ROWS;gy++)for(let gx=0;gx<COLS;gx++){
+    if(m.grid[gy][gx]!=='~')continue;
+    const x=gx*T,y=gy*T,at=(a,b)=>m.grid[b]&&(m.grid[b][a]==='~'||m.grid[b][a]==='#');
+    bgx.strokeStyle=m.world==='volcano'?'rgba(255,220,120,.5)':'rgba(255,255,255,.4)';
+    bgx.lineWidth=3;bgx.beginPath();
+    if(!at(gx,gy-1)){bgx.moveTo(x+2,y+4);bgx.lineTo(x+T-2,y+4)}
+    if(!at(gx,gy+1)){bgx.moveTo(x+2,y+T-4);bgx.lineTo(x+T-2,y+T-4)}
+    if(!at(gx-1,gy)){bgx.moveTo(x+4,y+2);bgx.lineTo(x+4,y+T-2)}
+    if(!at(gx+1,gy)){bgx.moveTo(x+T-4,y+2);bgx.lineTo(x+T-4,y+T-2)}
+    bgx.stroke();
   }
   bgx.strokeStyle=INK;bgx.lineWidth=2.5;
   for(let gy=0;gy<ROWS;gy++)for(let gx=0;gx<COLS;gx++){

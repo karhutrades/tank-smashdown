@@ -22,7 +22,7 @@ function startRound(){
   }
   movers=(m.movers||[]).map(v=>({...v}));
   prerenderArena(m,mapIndex);
-  bullets=[];mines=[];pickups=[];floats=[];marks=[];conf=[];
+  bullets=[];mines=[];pickups=[];floats=[];marks=[];conf=[];rings=[];burns=[];
   shake=0;hitstop=0;pickupClock=200;readyPinged=false;goPinged=false;
   initAmbient(m);
   tanks.forEach((t,i)=>{const s=m.spawns[i];
@@ -30,7 +30,7 @@ function startRound(){
     t.cd=0;t.inv=0;t.recoil=0;t.ivx=0;t.ivy=0;t.mvx=0;t.mvy=0;t.dist=0;
     t.tpCd=0;t.crushCd=0;t.starCd=0;t.shield=0;t.minesToLay=0;t.mineCd=0;
     t.fx={rapid:0,triple:0,big:0,pierce:0,star:0,speed:0,ghost:0,frozen:0,reverse:0};
-    t.wedge=0;t.lock=0;t.roul=null;
+    t.wedge=0;t.lock=0;t.roul=null;t.charge=0;t.spin=0;t.shots=0;t.fireHeld=false;t.lastRoll=null;
     if(t.ai){t.aiTick=0;t.aiFireLock=0;t.aiPath=null;t.aiPanic=0;t.aiPanicDir=[1,0];t.aiLastX=t.x;t.aiLastY=t.y;t.aimNoise=0}
   });
   roundClock=ROUND_TIME;sudden=false;
@@ -105,34 +105,45 @@ function finishMatch(winner){
 }
 
 /* ---------------- firing ---------------- */
-function fire(t){
-  const g=GUNS[t.cls.gun],fx=t.fx;
+function fire(t,chargeDist){
+  const g=GUNS[t.cls.gun],fx=t.fx,skin=t.cls.skin;
   const maxLive=g.maxLive+(fx.triple>0?2:0);
   if(t.cd>0||t.fx.frozen>0||bullets.filter(b=>b.owner===t).length>=maxLive)return;
   let n=g.pellets||1,spread=g.spread||0;
   if(fx.triple>0){n=Math.max(3,n);spread=Math.max(.22,spread)}
-  const dmg=g.dmg+(fx.big>0?1:0),br=g.br+(fx.big>0?3:0);
+  // SCATTER perk: hold your ground for a marksman's spread
+  if(skin==='scatter')spread=Math.hypot(t.mvx,t.mvy)>1.2?.3:.12;
+  let dmg=g.dmg+(fx.big>0?1:0),br=g.br+(fx.big>0?3:0),knock=g.knock+(fx.big>0?4:0);
+  // BRAWLER perk: every third shell is a heavy one
+  let heavy=false;
+  if(skin==='brawler'){t.shots=(t.shots||0)+1;if(t.shots%4===0){heavy=true;dmg+=1;br+=3;knock+=5}}
   const mo=t.cls.radius+t.cls.bl-4;
   const base=(t.tang==null?t.ang:t.tang);
-  // a lobbed shell fuses for the distance to the enemy, so it lands on them
-  // instead of always dropping at maximum range
+  // BOMBARD: humans aim the arc with the charge meter, bots fuse to their target
   let life=g.life||0,life0=g.life||0;
   if(g.air){
-    const e=tanks[1-t.team];
-    const reach=e?Math.hypot(e.x-t.x,e.y-t.y):g.range;
-    life=Math.max(10,Math.min(g.life,Math.round((reach-mo)/g.spd)));
+    let reach;
+    if(chargeDist)reach=chargeDist;
+    else{const e=tanks[1-t.team];reach=e?Math.hypot(e.x-t.x,e.y-t.y):g.range;
+      if(t.ai&&g.fuseErr)reach+=(Math.random()-.5)*g.fuseErr} // bots misjudge the drop
+    life=Math.max(8,Math.min(g.life,Math.round((reach-mo)/g.spd)));
     life0=life;
   }
   for(let i=0;i<n;i++){
     const a=base+(spread?(i-(n-1)/2)*spread:0)+(g.jitter?(Math.random()-.5)*g.jitter:0);
-    bullets.push({x:t.x+Math.cos(a)*mo,y:t.y+Math.sin(a)*mo,px:0,py:0,
-      vx:Math.cos(a)*g.spd,vy:Math.sin(a)*g.spd,owner:t,dmg,r:br,
+    bullets.push({x:t.x+Math.cos(a)*mo,y:t.y+Math.sin(a)*mo,px:0,py:0,ox:t.x,oy:t.y,
+      vx:Math.cos(a)*g.spd,vy:Math.sin(a)*g.spd,owner:t,dmg,r:br,knock,heavy,
       bounces:g.bounces||0,life,life0,gun:t.cls.gun,
       pierce:fx.pierce>0,phase:!!g.phase,air:!!g.air,aoe:g.aoe||0,tpCd:0});
   }
-  t.cd=Math.round(g.cd*(fx.rapid>0?.5:1));t.recoil=g.br;
-  burst(t.x+Math.cos(base)*mo,t.y+Math.sin(base)*mo,'#ffd166',4,2.5);
-  SND[t.cls.gun]();
+  // SCOUT perk: the minigun spins up while the trigger is held
+  let cd=g.cd;
+  if(skin==='scout')cd=Math.round(cd*(1-(t.spin||0)/48*.45));
+  t.cd=Math.round(cd*(fx.rapid>0?.5:1));t.recoil=g.br+(heavy?3:0);
+  // PHANTOM perk: firing phases the hull for a beat
+  if(skin==='phantom')t.fx.ghost=Math.max(t.fx.ghost,26);
+  burst(t.x+Math.cos(base)*mo,t.y+Math.sin(base)*mo,heavy?'#ff8c42':'#ffd166',heavy?8:4,heavy?3.5:2.5);
+  if(heavy)sfx(240,70,.18,'square',.11);else SND[t.cls.gun]();
 }
 
 /* ---------------- AI ---------------- */
@@ -399,7 +410,7 @@ function controlTank(t){
   if(t.roul){
     t.roul.n--;
     if(t.roul.n%6===0){t.roul.idx=(t.roul.idx+1)%POWERS.length;if(t.roul.n>12)sMine()}
-    if(t.roul.n<=0){applyPower(t,POWERS[Math.random()*POWERS.length|0]);t.roul=null}
+    if(t.roul.n<=0){const def=POWERS[Math.random()*POWERS.length|0];applyPower(t,def);t.lastRoll={def,ttl:110};t.roul=null}
   }
   if(t.cd>0)t.cd--;
   if(t.inv>0)t.inv--;
@@ -410,7 +421,18 @@ function controlTank(t){
     if(t.mineCd>0)t.mineCd--;
     else{mines.push({x:t.x,y:t.y,owner:t,arm:30,life:900});t.minesToLay--;t.mineCd=40;sMine()}
   }
-  if(inp.fire)fire(t);
+  const g3=GUNS[t.cls.gun];
+  if(t.cls.skin==='scout')t.spin=inp.fire?Math.min(48,(t.spin||0)+1):Math.max(0,(t.spin||0)-2);
+  if(g3.air&&!t.ai){
+    // hold to stretch the arc, release to lob
+    if(inp.fire&&t.cd<=0){
+      t.charge=Math.min(g3.range,(t.charge||g3.minR)+3.4);
+      if(frame%7===0)sChg((t.charge-g3.minR)/(g3.range-g3.minR));
+    }else if(t.fireHeld&&t.charge>0&&t.cd<=0){
+      fire(t,t.charge);t.charge=0;
+    }else if(!inp.fire)t.charge=0;
+  }else if(inp.fire)fire(t);
+  t.fireHeld=inp.fire;
 }
 function tankCollide(){
   const [a,b]=tanks;
@@ -442,7 +464,9 @@ function tankCollide(){
 function damage(t,dmg,fromAng,knock){
   if(t.fx.star>0)return;
   if(t.shield>0){t.shield--;burst(t.x,t.y,'#3d7ea6',10,3);sBounce();addFloat(t.x,t.y-24,'BLOCKED','#3d7ea6');return}
+  if(t.cls.skin==='titan')knock*=.3;
   t.hp-=dmg;t.inv=BULLET_INVUL;shake=Math.max(shake,5+dmg*2);hitstop=Math.max(hitstop,dmg>1?6:3);sHit();
+  ring(t.x,t.y,'#fff',5,4);if(dmg>1)ring(t.x,t.y,'#ffd166',7,5);
   t.squash=1;flash=Math.max(flash,dmg>1?.5:.3);
   burst(t.x,t.y,t.cls.color,10,3.5);burst(t.x,t.y,'#fff',5,4);
   addFloat(t.x,t.y-t.cls.radius-10,'-'+dmg,'#ffd166');
@@ -452,11 +476,12 @@ function damage(t,dmg,fromAng,knock){
     bumpStat(roundWinner.team,'kos');bumpStat(0,'rounds');bumpStat(1,'rounds');
     ko={x:t.x,y:t.y};
     burst(t.x,t.y,t.cls.color,26,6);burst(t.x,t.y,'#ffd166',18,5);
+    ring(t.x,t.y,'#fff',9,7);ring(t.x,t.y,t.cls.color,6,5);ring(t.x,t.y,'#ffd166',12,4);
     shake=14;hitstop=8;sKO();jWin();state='round';timer=140;
   }
 }
 function explode(x,y,radius,dmg,owner){
-  burst(x,y,'#ffd166',20,5);burst(x,y,'#ff8c42',14,4);shake=Math.max(shake,8);sBoom();
+  burst(x,y,'#ffd166',20,5);burst(x,y,'#ff8c42',14,4);ring(x,y,'#ffd166',8,6);ring(x,y,'#fff',5,3);shake=Math.max(shake,8);sBoom();
   for(const t of tanks){
     if(t===owner||t.inv>0)continue;
     if(Math.hypot(t.x-x,t.y-y)<radius+t.cls.radius)damage(t,dmg,Math.atan2(t.y-y,t.x-x),12);
@@ -532,6 +557,17 @@ function stepPlay(){
       }
     }
   }
+  for(let i=burns.length-1;i>=0;i--){
+    const bn=burns[i];
+    if(--bn.life<=0){burns.splice(i,1);continue}
+    for(const t of tanks){
+      if(t===bn.owner||t.inv>0)continue;
+      if(Math.hypot(t.x-bn.x,t.y-bn.y)<t.cls.radius+11){
+        damage(t,1,Math.atan2(t.y-bn.y,t.x-bn.x),5);
+        if(state!=='play')return;
+      }
+    }
+  }
   for(let i=mines.length-1;i>=0;i--){
     const mn=mines[i];
     if(mn.arm>0)mn.arm--;
@@ -548,6 +584,8 @@ function stepPlay(){
     const b=bullets[i];
     if(b.life&&--b.life<=0){
       if(b.air)explode(b.x+b.vx,b.y+b.vy,b.aoe,b.dmg,b.owner);
+      // BLAZE perk: spent flames scorch the ground for a while
+      if(b.gun==='flame'&&burns.length<14)burns.push({x:b.x,y:b.y,life:90,owner:b.owner});
       bullets.splice(i,1);
       if(state!=='play')return;
       continue;
@@ -582,6 +620,8 @@ function stepPlay(){
         if(hx||(mv&&Math.abs(b.vx)>Math.abs(b.vy)))b.vx=-b.vx;
         if(hy||(mv&&Math.abs(b.vy)>=Math.abs(b.vx)))b.vy=-b.vy;
         if(!hx&&!hy&&!mv){b.vx=-b.vx;b.vy=-b.vy}
+        // RICOCHET perk: a banked shot hits harder
+        if(b.gun==='ricochet'&&!b.hot){b.hot=true;b.dmg++}
         sBounce();burst(b.x,b.y,'#7ae0c3',3,2);
       }else{burst(b.x,b.y,'#ffd166',6,2.5);bullets.splice(i,1);continue}
     }
@@ -592,7 +632,11 @@ function stepPlay(){
       const rr2=(t.cls.radius+b.r)*(t.cls.radius+b.r);
       if((b.x-t.x)*(b.x-t.x)+(b.y-t.y)*(b.y-t.y)<rr2){
         bullets.splice(i,1);gone=true;
-        damage(t,b.dmg,Math.atan2(b.vy,b.vx),GUNS[b.gun].knock);
+        let d2=b.dmg;
+        // LONGSHOT perk: the round gathers pace over distance
+        if(b.gun==='sniper'){const fl=Math.hypot(b.x-b.ox,b.y-b.oy);d2=fl<160?1:fl<340?2:3;
+          if(d2===3)addFloat(t.x,t.y-30,'LONG SHOT!','#35a44a')}
+        damage(t,d2,Math.atan2(b.vy,b.vx),b.knock!=null?b.knock:GUNS[b.gun].knock);
         break;
       }
     }

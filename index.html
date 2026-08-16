@@ -19,26 +19,26 @@ const SWATCHES=['#ef3e4a','#ff8c42','#ffd23f','#35a44a','#2ec4b6','#3d7ea6','#a0
 
 /* ---------------- guns & tank classes ---------------- */
 const GUNS={
-  rapid:   {cd:10,maxLive:4,dmg:1,spd:8.5,br:4,jitter:.09,knock:6,range:340},
-  cannon:  {cd:22,maxLive:3,dmg:1,spd:7.5,br:5,knock:9,range:420},
-  shell:   {cd:46,maxLive:2,dmg:2,spd:5.5,br:8,knock:15,range:380},
-  sniper:  {cd:55,maxLive:1,dmg:2,spd:13,br:4.5,knock:12,trail:1,range:700},
-  scatter: {cd:38,maxLive:6,dmg:1,spd:7,br:4,pellets:3,spread:.24,life:26,knock:7,range:180},
-  ricochet:{cd:26,maxLive:2,dmg:1,spd:7.2,br:5,bounces:2,knock:9,range:420},
-  mortar:  {cd:60,maxLive:2,dmg:2,spd:6,br:7,air:1,life:50,aoe:48,knock:12,range:300},
-  flame:   {cd:4,maxLive:10,dmg:1,spd:5.5,br:4,jitter:.35,life:13,knock:2,range:75},
-  phase:   {cd:42,maxLive:1,dmg:1,spd:5.2,br:5.5,phase:1,knock:8,range:500},
+  rapid:   {cd:9,maxLive:5,dmg:1,spd:8.8,br:4,jitter:.09,knock:6,range:360},
+  cannon:  {cd:28,maxLive:3,dmg:1,spd:7.3,br:5,knock:9,range:420},
+  shell:   {cd:42,maxLive:2,dmg:2,spd:6,br:8,knock:15,range:400},
+  sniper:  {cd:48,maxLive:1,dmg:2,spd:13,br:4.5,knock:12,trail:1,range:700},
+  scatter: {cd:28,maxLive:12,dmg:1,spd:7.6,br:5,pellets:4,spread:.26,life:30,knock:8,range:230},
+  ricochet:{cd:31,maxLive:2,dmg:1,spd:6.8,br:5,bounces:2,knock:9,range:420},
+  mortar:  {cd:86,maxLive:1,dmg:2,spd:6,br:7,air:1,life:50,aoe:38,knock:12,range:400,minR:90,fuseErr:150},
+  flame:   {cd:4,maxLive:14,dmg:1,spd:7,br:4.5,jitter:.26,life:20,knock:2,range:155},
+  phase:   {cd:44,maxLive:1,dmg:2,spd:6.6,br:5.5,phase:1,knock:10,range:520},
 };
 const CLASSES=[
-  {name:'SCOUT',   skin:'scout',   gun:'rapid',   color:'#ffd23f',dark:'#cba317',light:'#ffe89a',hp:4,speed:3.9,radius:14,  bl:20,desc:'TWIN RAPID GUNS',     pips:[5,2,2],unlock:null},
-  {name:'BRAWLER', skin:'brawler', gun:'cannon',  color:'#ef3e4a',dark:'#b3202c',light:'#ff7d85',hp:5,speed:3.1,radius:15,  bl:26,desc:'BALANCED CANNON',     pips:[3,3,3],unlock:null},
-  {name:'TITAN',   skin:'titan',   gun:'shell',   color:'#3d7ea6',dark:'#2a5f80',light:'#6fb0d8',hp:7,speed:2.4,radius:17,  bl:24,desc:'HEAVY SHELL · 2 DMG', pips:[1,5,5],unlock:null},
-  {name:'LONGSHOT',skin:'longshot',gun:'sniper',  color:'#35a44a',dark:'#1f7c32',light:'#6cd07e',hp:4,speed:3.3,radius:14,  bl:34,desc:'SNIPER ROUND · 2 DMG',pips:[3,2,4],unlock:null},
-  {name:'SCATTER', skin:'scatter', gun:'scatter', color:'#ff8c42',dark:'#d3652a',light:'#ffb27a',hp:5,speed:3.0,radius:15,  bl:18,desc:'TRIPLE SPREAD SHOT',  pips:[3,3,4],unlock:{k:'wins',n:2, txt:'WIN 2 MATCHES'}},
-  {name:'RICOCHET',skin:'ricochet',gun:'ricochet',color:'#2ec4b6',dark:'#1e8f85',light:'#6ce4d8',hp:5,speed:3.2,radius:15,  bl:24,desc:'BOUNCES OFF WALLS',   pips:[4,3,3],unlock:{k:'kos', n:15,txt:'SCORE 15 KOs'}},
-  {name:'BOMBARD', skin:'bombard', gun:'mortar',  color:'#8a9a2f',dark:'#66741f',light:'#c3d45e',hp:5,speed:2.7,radius:16,  bl:16,desc:'LOBS OVER WALLS',     pips:[2,4,4],unlock:{k:'campaign',n:4,txt:'CLEAR 4 CAMPAIGN STAGES'}},
-  {name:'BLAZE',   skin:'blaze',   gun:'flame',   color:'#d95d39',dark:'#a83f22',light:'#f28f6e',hp:5,speed:3.4,radius:14.5,bl:18,desc:'SHORT RANGE FLAME',   pips:[4,3,3],unlock:{k:'wins',n:6, txt:'WIN 6 MATCHES'}},
-  {name:'PHANTOM', skin:'phantom', gun:'phase',   color:'#8d99ae',dark:'#5f6b80',light:'#c3ccdd',hp:4,speed:3.3,radius:14.5,bl:24,desc:'SHOOTS THROUGH WALLS',pips:[3,2,4],unlock:{k:'campaign',n:9,txt:'CLEAR 9 CAMPAIGN STAGES'}},
+  {name:'SCOUT',   skin:'scout',   gun:'rapid',   color:'#ffd23f',dark:'#cba317',light:'#ffe89a',hp:4,speed:3.9,radius:14,  bl:20,desc:'TWIN RAPID GUNS',     pips:[5,2,2],perk:'GUN SPINS UP AS YOU HOLD FIRE',unlock:null},
+  {name:'BRAWLER', skin:'brawler', gun:'cannon',  color:'#ef3e4a',dark:'#b3202c',light:'#ff7d85',hp:5,speed:3.1,radius:15,  bl:26,desc:'BALANCED CANNON',     pips:[3,3,3],perk:'EVERY 4TH SHELL IS HEAVY',unlock:null},
+  {name:'TITAN',   skin:'titan',   gun:'shell',   color:'#3d7ea6',dark:'#2a5f80',light:'#6fb0d8',hp:7,speed:2.4,radius:17,  bl:24,desc:'HEAVY SHELL · 2 DMG', pips:[1,5,5],perk:'BARELY MOVED BY HITS',unlock:null},
+  {name:'LONGSHOT',skin:'longshot',gun:'sniper',  color:'#35a44a',dark:'#1f7c32',light:'#6cd07e',hp:4,speed:3.3,radius:14,  bl:34,desc:'SNIPER · 1-3 DMG BY RANGE',pips:[3,2,4],perk:'DAMAGE GROWS WITH DISTANCE',unlock:null},
+  {name:'SCATTER', skin:'scatter', gun:'scatter', color:'#ff8c42',dark:'#d3652a',light:'#ffb27a',hp:5,speed:3.0,radius:15,  bl:18,desc:'TRIPLE SPREAD SHOT',  pips:[3,3,4],perk:'STAND STILL FOR A TIGHT SPREAD',unlock:{k:'wins',n:2, txt:'WIN 2 MATCHES'}},
+  {name:'RICOCHET',skin:'ricochet',gun:'ricochet',color:'#2ec4b6',dark:'#1e8f85',light:'#6ce4d8',hp:5,speed:3.2,radius:15,  bl:24,desc:'BOUNCES OFF WALLS',   pips:[4,3,3],perk:'BOUNCED SHOTS HIT HARDER',unlock:{k:'kos', n:15,txt:'SCORE 15 KOs'}},
+  {name:'BOMBARD', skin:'bombard', gun:'mortar',  color:'#8a9a2f',dark:'#66741f',light:'#c3d45e',hp:5,speed:2.7,radius:16,  bl:16,desc:'LOBS OVER WALLS',     pips:[2,4,4],perk:'HOLD FIRE TO AIM THE ARC, RELEASE TO LOB',unlock:{k:'campaign',n:4,txt:'CLEAR 4 CAMPAIGN STAGES'}},
+  {name:'BLAZE',   skin:'blaze',   gun:'flame',   color:'#d95d39',dark:'#a83f22',light:'#f28f6e',hp:5,speed:3.4,radius:14.5,bl:18,desc:'SHORT RANGE FLAME',   pips:[4,3,3],perk:'FLAMES LEAVE BURNING GROUND',unlock:{k:'wins',n:6, txt:'WIN 6 MATCHES'}},
+  {name:'PHANTOM', skin:'phantom', gun:'phase',   color:'#8d99ae',dark:'#5f6b80',light:'#c3ccdd',hp:5,speed:3.3,radius:14.5,bl:24,desc:'2 DMG THROUGH WALLS',pips:[3,3,4],perk:'EACH SHOT PHASES YOU THROUGH WALLS',unlock:{k:'campaign',n:9,txt:'CLEAR 9 CAMPAIGN STAGES'}},
 ];
 
 /* ---------------- pilots: a drawn character per tank ----------------
@@ -242,6 +242,7 @@ function jingle(midis,gap,wave,vol){
 const jWin=()=>jingle([72,76,79,84],.11,'square',.12);
 const jGame=()=>jingle([72,76,79,84,88,84,91],.12,'square',.13);
 const sCd=()=>sfx(440,440,.09,'square',.13);
+const sChg=p=>sfx(220+p*420,220+p*420,.05,'triangle',.07);
 const sCdGo=()=>sfx(880,880,.3,'square',.15);
 
 /* ---------------- input ---------------- *//* ---------------- input ---------------- */
@@ -566,7 +567,7 @@ const MAPS=[
 ];
 const AMBIENT={meadow:'clouds',desert:'heat',frost:'snow',volcano:'embers',factory:'sparks'};
 /* ---------------- state ---------------- */
-let tanks=[],bullets=[],parts=[],mines=[],pickups=[],floats=[],marks=[],amb=[],conf=[];
+let tanks=[],bullets=[],parts=[],mines=[],pickups=[],floats=[],marks=[],amb=[],conf=[],rings=[],burns=[];
 let shake=0,hitstop=0,frame=0;
 let state='title',timer=0,mapIndex=0,roundWinner=null;
 let cells=null,crateHp=null,movers=[],portals={},readyPinged=false,goPinged=false;
@@ -705,6 +706,7 @@ function burst(x,y,color,n,pow){
     parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:20+Math.random()*22,color,size:3+Math.random()*4});}
 }
 function addFloat(x,y,txt,color){floats.push({x,y,txt,color,life:60})}
+function ring(x,y,color,speed,width){rings.push({x,y,r:6,vr:speed||4,life:22,color:color||'#fff',w:width||4})}
 
 /* ---------------- movers ---------------- */
 function moverOff(mv,f){
@@ -778,6 +780,17 @@ function prerenderArena(m,mi){
     bgx.fillRect(gx*T,gy*T,T,T);
   }
   let s=mi*137+11;const rnd=()=>(s=(s*1103515245+12345)&0x7fffffff)/0x7fffffff;
+  // ground grain: brightness variance + speckle so the floor reads as material
+  for(let gy=0;gy<ROWS;gy++)for(let gx=0;gx<COLS;gx++){
+    if(m.grid[gy][gx]!=='.')continue;
+    const x=gx*T,y=gy*T;
+    if(rnd()<.5){bgx.fillStyle='rgba(255,255,255,'+(rnd()*.04).toFixed(3)+')';bgx.fillRect(x,y,T,T)}
+    else{bgx.fillStyle='rgba(20,22,40,'+(rnd()*.05).toFixed(3)+')';bgx.fillRect(x,y,T,T)}
+    for(let k=0;k<3;k++){
+      bgx.fillStyle=rnd()<.5?'rgba(255,255,255,.05)':'rgba(20,22,40,.06)';
+      bgx.fillRect(x+rnd()*T,y+rnd()*T,2,2);
+    }
+  }
   for(let gy=1;gy<ROWS-1;gy++)for(let gx=1;gx<COLS-1;gx++){
     const c=m.grid[gy][gx];
     if(c==='.'&&rnd()<.09)drawDecal(bgx,m.decal,gx*T+8+rnd()*(T-16),gy*T+8+rnd()*(T-16),rnd);
@@ -787,6 +800,18 @@ function prerenderArena(m,mi){
   for(let gy=0;gy<ROWS;gy++)for(let gx=0;gx<COLS;gx++){
     if(m.grid[gy][gx]!=='~')continue;
     bgx.fillStyle=m.liqA;bgx.fillRect(gx*T,gy*T,T,T);
+  }
+  // foam line just inside every shore, then the ink edge
+  for(let gy=0;gy<ROWS;gy++)for(let gx=0;gx<COLS;gx++){
+    if(m.grid[gy][gx]!=='~')continue;
+    const x=gx*T,y=gy*T,at=(a,b)=>m.grid[b]&&(m.grid[b][a]==='~'||m.grid[b][a]==='#');
+    bgx.strokeStyle=m.world==='volcano'?'rgba(255,220,120,.5)':'rgba(255,255,255,.4)';
+    bgx.lineWidth=3;bgx.beginPath();
+    if(!at(gx,gy-1)){bgx.moveTo(x+2,y+4);bgx.lineTo(x+T-2,y+4)}
+    if(!at(gx,gy+1)){bgx.moveTo(x+2,y+T-4);bgx.lineTo(x+T-2,y+T-4)}
+    if(!at(gx-1,gy)){bgx.moveTo(x+4,y+2);bgx.lineTo(x+4,y+T-2)}
+    if(!at(gx+1,gy)){bgx.moveTo(x+T-4,y+2);bgx.lineTo(x+T-4,y+T-2)}
+    bgx.stroke();
   }
   bgx.strokeStyle=INK;bgx.lineWidth=2.5;
   for(let gy=0;gy<ROWS;gy++)for(let gx=0;gx<COLS;gx++){
@@ -885,7 +910,7 @@ function startRound(){
   }
   movers=(m.movers||[]).map(v=>({...v}));
   prerenderArena(m,mapIndex);
-  bullets=[];mines=[];pickups=[];floats=[];marks=[];conf=[];
+  bullets=[];mines=[];pickups=[];floats=[];marks=[];conf=[];rings=[];burns=[];
   shake=0;hitstop=0;pickupClock=200;readyPinged=false;goPinged=false;
   initAmbient(m);
   tanks.forEach((t,i)=>{const s=m.spawns[i];
@@ -893,7 +918,7 @@ function startRound(){
     t.cd=0;t.inv=0;t.recoil=0;t.ivx=0;t.ivy=0;t.mvx=0;t.mvy=0;t.dist=0;
     t.tpCd=0;t.crushCd=0;t.starCd=0;t.shield=0;t.minesToLay=0;t.mineCd=0;
     t.fx={rapid:0,triple:0,big:0,pierce:0,star:0,speed:0,ghost:0,frozen:0,reverse:0};
-    t.wedge=0;t.lock=0;t.roul=null;
+    t.wedge=0;t.lock=0;t.roul=null;t.charge=0;t.spin=0;t.shots=0;t.fireHeld=false;t.lastRoll=null;
     if(t.ai){t.aiTick=0;t.aiFireLock=0;t.aiPath=null;t.aiPanic=0;t.aiPanicDir=[1,0];t.aiLastX=t.x;t.aiLastY=t.y;t.aimNoise=0}
   });
   roundClock=ROUND_TIME;sudden=false;
@@ -968,34 +993,45 @@ function finishMatch(winner){
 }
 
 /* ---------------- firing ---------------- */
-function fire(t){
-  const g=GUNS[t.cls.gun],fx=t.fx;
+function fire(t,chargeDist){
+  const g=GUNS[t.cls.gun],fx=t.fx,skin=t.cls.skin;
   const maxLive=g.maxLive+(fx.triple>0?2:0);
   if(t.cd>0||t.fx.frozen>0||bullets.filter(b=>b.owner===t).length>=maxLive)return;
   let n=g.pellets||1,spread=g.spread||0;
   if(fx.triple>0){n=Math.max(3,n);spread=Math.max(.22,spread)}
-  const dmg=g.dmg+(fx.big>0?1:0),br=g.br+(fx.big>0?3:0);
+  // SCATTER perk: hold your ground for a marksman's spread
+  if(skin==='scatter')spread=Math.hypot(t.mvx,t.mvy)>1.2?.3:.12;
+  let dmg=g.dmg+(fx.big>0?1:0),br=g.br+(fx.big>0?3:0),knock=g.knock+(fx.big>0?4:0);
+  // BRAWLER perk: every third shell is a heavy one
+  let heavy=false;
+  if(skin==='brawler'){t.shots=(t.shots||0)+1;if(t.shots%4===0){heavy=true;dmg+=1;br+=3;knock+=5}}
   const mo=t.cls.radius+t.cls.bl-4;
   const base=(t.tang==null?t.ang:t.tang);
-  // a lobbed shell fuses for the distance to the enemy, so it lands on them
-  // instead of always dropping at maximum range
+  // BOMBARD: humans aim the arc with the charge meter, bots fuse to their target
   let life=g.life||0,life0=g.life||0;
   if(g.air){
-    const e=tanks[1-t.team];
-    const reach=e?Math.hypot(e.x-t.x,e.y-t.y):g.range;
-    life=Math.max(10,Math.min(g.life,Math.round((reach-mo)/g.spd)));
+    let reach;
+    if(chargeDist)reach=chargeDist;
+    else{const e=tanks[1-t.team];reach=e?Math.hypot(e.x-t.x,e.y-t.y):g.range;
+      if(t.ai&&g.fuseErr)reach+=(Math.random()-.5)*g.fuseErr} // bots misjudge the drop
+    life=Math.max(8,Math.min(g.life,Math.round((reach-mo)/g.spd)));
     life0=life;
   }
   for(let i=0;i<n;i++){
     const a=base+(spread?(i-(n-1)/2)*spread:0)+(g.jitter?(Math.random()-.5)*g.jitter:0);
-    bullets.push({x:t.x+Math.cos(a)*mo,y:t.y+Math.sin(a)*mo,px:0,py:0,
-      vx:Math.cos(a)*g.spd,vy:Math.sin(a)*g.spd,owner:t,dmg,r:br,
+    bullets.push({x:t.x+Math.cos(a)*mo,y:t.y+Math.sin(a)*mo,px:0,py:0,ox:t.x,oy:t.y,
+      vx:Math.cos(a)*g.spd,vy:Math.sin(a)*g.spd,owner:t,dmg,r:br,knock,heavy,
       bounces:g.bounces||0,life,life0,gun:t.cls.gun,
       pierce:fx.pierce>0,phase:!!g.phase,air:!!g.air,aoe:g.aoe||0,tpCd:0});
   }
-  t.cd=Math.round(g.cd*(fx.rapid>0?.5:1));t.recoil=g.br;
-  burst(t.x+Math.cos(base)*mo,t.y+Math.sin(base)*mo,'#ffd166',4,2.5);
-  SND[t.cls.gun]();
+  // SCOUT perk: the minigun spins up while the trigger is held
+  let cd=g.cd;
+  if(skin==='scout')cd=Math.round(cd*(1-(t.spin||0)/48*.45));
+  t.cd=Math.round(cd*(fx.rapid>0?.5:1));t.recoil=g.br+(heavy?3:0);
+  // PHANTOM perk: firing phases the hull for a beat
+  if(skin==='phantom')t.fx.ghost=Math.max(t.fx.ghost,26);
+  burst(t.x+Math.cos(base)*mo,t.y+Math.sin(base)*mo,heavy?'#ff8c42':'#ffd166',heavy?8:4,heavy?3.5:2.5);
+  if(heavy)sfx(240,70,.18,'square',.11);else SND[t.cls.gun]();
 }
 
 /* ---------------- AI ---------------- */
@@ -1262,7 +1298,7 @@ function controlTank(t){
   if(t.roul){
     t.roul.n--;
     if(t.roul.n%6===0){t.roul.idx=(t.roul.idx+1)%POWERS.length;if(t.roul.n>12)sMine()}
-    if(t.roul.n<=0){applyPower(t,POWERS[Math.random()*POWERS.length|0]);t.roul=null}
+    if(t.roul.n<=0){const def=POWERS[Math.random()*POWERS.length|0];applyPower(t,def);t.lastRoll={def,ttl:110};t.roul=null}
   }
   if(t.cd>0)t.cd--;
   if(t.inv>0)t.inv--;
@@ -1273,7 +1309,18 @@ function controlTank(t){
     if(t.mineCd>0)t.mineCd--;
     else{mines.push({x:t.x,y:t.y,owner:t,arm:30,life:900});t.minesToLay--;t.mineCd=40;sMine()}
   }
-  if(inp.fire)fire(t);
+  const g3=GUNS[t.cls.gun];
+  if(t.cls.skin==='scout')t.spin=inp.fire?Math.min(48,(t.spin||0)+1):Math.max(0,(t.spin||0)-2);
+  if(g3.air&&!t.ai){
+    // hold to stretch the arc, release to lob
+    if(inp.fire&&t.cd<=0){
+      t.charge=Math.min(g3.range,(t.charge||g3.minR)+3.4);
+      if(frame%7===0)sChg((t.charge-g3.minR)/(g3.range-g3.minR));
+    }else if(t.fireHeld&&t.charge>0&&t.cd<=0){
+      fire(t,t.charge);t.charge=0;
+    }else if(!inp.fire)t.charge=0;
+  }else if(inp.fire)fire(t);
+  t.fireHeld=inp.fire;
 }
 function tankCollide(){
   const [a,b]=tanks;
@@ -1305,7 +1352,9 @@ function tankCollide(){
 function damage(t,dmg,fromAng,knock){
   if(t.fx.star>0)return;
   if(t.shield>0){t.shield--;burst(t.x,t.y,'#3d7ea6',10,3);sBounce();addFloat(t.x,t.y-24,'BLOCKED','#3d7ea6');return}
+  if(t.cls.skin==='titan')knock*=.3;
   t.hp-=dmg;t.inv=BULLET_INVUL;shake=Math.max(shake,5+dmg*2);hitstop=Math.max(hitstop,dmg>1?6:3);sHit();
+  ring(t.x,t.y,'#fff',5,4);if(dmg>1)ring(t.x,t.y,'#ffd166',7,5);
   t.squash=1;flash=Math.max(flash,dmg>1?.5:.3);
   burst(t.x,t.y,t.cls.color,10,3.5);burst(t.x,t.y,'#fff',5,4);
   addFloat(t.x,t.y-t.cls.radius-10,'-'+dmg,'#ffd166');
@@ -1315,11 +1364,12 @@ function damage(t,dmg,fromAng,knock){
     bumpStat(roundWinner.team,'kos');bumpStat(0,'rounds');bumpStat(1,'rounds');
     ko={x:t.x,y:t.y};
     burst(t.x,t.y,t.cls.color,26,6);burst(t.x,t.y,'#ffd166',18,5);
+    ring(t.x,t.y,'#fff',9,7);ring(t.x,t.y,t.cls.color,6,5);ring(t.x,t.y,'#ffd166',12,4);
     shake=14;hitstop=8;sKO();jWin();state='round';timer=140;
   }
 }
 function explode(x,y,radius,dmg,owner){
-  burst(x,y,'#ffd166',20,5);burst(x,y,'#ff8c42',14,4);shake=Math.max(shake,8);sBoom();
+  burst(x,y,'#ffd166',20,5);burst(x,y,'#ff8c42',14,4);ring(x,y,'#ffd166',8,6);ring(x,y,'#fff',5,3);shake=Math.max(shake,8);sBoom();
   for(const t of tanks){
     if(t===owner||t.inv>0)continue;
     if(Math.hypot(t.x-x,t.y-y)<radius+t.cls.radius)damage(t,dmg,Math.atan2(t.y-y,t.x-x),12);
@@ -1395,6 +1445,17 @@ function stepPlay(){
       }
     }
   }
+  for(let i=burns.length-1;i>=0;i--){
+    const bn=burns[i];
+    if(--bn.life<=0){burns.splice(i,1);continue}
+    for(const t of tanks){
+      if(t===bn.owner||t.inv>0)continue;
+      if(Math.hypot(t.x-bn.x,t.y-bn.y)<t.cls.radius+11){
+        damage(t,1,Math.atan2(t.y-bn.y,t.x-bn.x),5);
+        if(state!=='play')return;
+      }
+    }
+  }
   for(let i=mines.length-1;i>=0;i--){
     const mn=mines[i];
     if(mn.arm>0)mn.arm--;
@@ -1411,6 +1472,8 @@ function stepPlay(){
     const b=bullets[i];
     if(b.life&&--b.life<=0){
       if(b.air)explode(b.x+b.vx,b.y+b.vy,b.aoe,b.dmg,b.owner);
+      // BLAZE perk: spent flames scorch the ground for a while
+      if(b.gun==='flame'&&burns.length<14)burns.push({x:b.x,y:b.y,life:90,owner:b.owner});
       bullets.splice(i,1);
       if(state!=='play')return;
       continue;
@@ -1445,6 +1508,8 @@ function stepPlay(){
         if(hx||(mv&&Math.abs(b.vx)>Math.abs(b.vy)))b.vx=-b.vx;
         if(hy||(mv&&Math.abs(b.vy)>=Math.abs(b.vx)))b.vy=-b.vy;
         if(!hx&&!hy&&!mv){b.vx=-b.vx;b.vy=-b.vy}
+        // RICOCHET perk: a banked shot hits harder
+        if(b.gun==='ricochet'&&!b.hot){b.hot=true;b.dmg++}
         sBounce();burst(b.x,b.y,'#7ae0c3',3,2);
       }else{burst(b.x,b.y,'#ffd166',6,2.5);bullets.splice(i,1);continue}
     }
@@ -1455,7 +1520,11 @@ function stepPlay(){
       const rr2=(t.cls.radius+b.r)*(t.cls.radius+b.r);
       if((b.x-t.x)*(b.x-t.x)+(b.y-t.y)*(b.y-t.y)<rr2){
         bullets.splice(i,1);gone=true;
-        damage(t,b.dmg,Math.atan2(b.vy,b.vx),GUNS[b.gun].knock);
+        let d2=b.dmg;
+        // LONGSHOT perk: the round gathers pace over distance
+        if(b.gun==='sniper'){const fl=Math.hypot(b.x-b.ox,b.y-b.oy);d2=fl<160?1:fl<340?2:3;
+          if(d2===3)addFloat(t.x,t.y-30,'LONG SHOT!','#35a44a')}
+        damage(t,d2,Math.atan2(b.vy,b.vx),b.knock!=null?b.knock:GUNS[b.gun].knock);
         break;
       }
     }
@@ -1634,7 +1703,15 @@ function step(){
   if(toast&&--toast.life<=0)toast=null;
   if(shake>0)shake*=.86;
   if(flash>0)flash=Math.max(0,flash-.06);
-  for(const t of tanks)if(t.squash>0)t.squash=Math.max(0,t.squash-.09);
+  for(let i=rings.length-1;i>=0;i--){const rg=rings[i];rg.r+=rg.vr;if(--rg.life<=0)rings.splice(i,1)}
+  for(const t of tanks){
+    if(t.squash>0)t.squash=Math.max(0,t.squash-.09);
+    if(t.lastRoll&&t.lastRoll.ttl>0)t.lastRoll.ttl--;
+    // battle damage: low tanks trail smoke
+    if(t.hp>0&&t.hp<=2&&frame%7===0&&['play','round'].includes(state))
+      parts.push({x:t.x+(Math.random()-.5)*10,y:t.y-4,vx:(Math.random()-.5)*.4,vy:-.8,
+        life:34,color:'smoke',size:4+Math.random()*3});
+  }
   stepAmbient();
   if(hitstop>0){hitstop--;pressQ.clear();return}
   if(state==='title')stepTitle();
@@ -1679,7 +1756,15 @@ function drawDynamicTiles(){
       cx.strokeStyle=m.liqB;cx.lineWidth=2.5;
       cx.beginPath();cx.arc(x+12+Math.sin(ph)*3,y+14,6,Math.PI*.15,Math.PI*.85);cx.stroke();
       cx.beginPath();cx.arc(x+28+Math.cos(ph)*3,y+28,6,Math.PI*.15,Math.PI*.85);cx.stroke();
-      if(m.world==='volcano'&&Math.random()<.004)burst(x+Math.random()*T,y+Math.random()*T,'#ffd166',1,1.5);
+      if(m.world==='volcano'){
+        cx.save();cx.globalCompositeOperation='lighter';
+        cx.globalAlpha=.10+.06*Math.sin(frame*.07+gx*1.3+gy*.8);
+        cx.fillStyle='#ff8c42';cx.fillRect(x,y,T,T);
+        cx.restore();
+        if(Math.random()<.004)burst(x+Math.random()*T,y+Math.random()*T,'#ffd166',1,1.5);
+      }else if(Math.random()<.002){
+        parts.push({x:x+Math.random()*T,y:y+Math.random()*T,vx:0,vy:0,life:14,color:'#ffffff',size:1.6});
+      }
     }else if(c==='o'){
       const cxp=x+T/2,cyp=y+T/2;
       cx.fillStyle='#ef3e4a';cx.beginPath();cx.arc(cxp,cyp,13,0,Math.PI*2);cx.fill();
@@ -1819,6 +1904,9 @@ function drawTankBody(o){
   cx.fillStyle='rgba(255,255,255,.28)';rr(cx,-r*.82,-r*.62,r*1.64,r*.44,r*.2);cx.fill();
   cx.fillStyle='rgba(20,22,40,.16)';rr(cx,-r*.82,r*.2,r*1.64,r*.36,r*.16);cx.fill();
   cx.fillStyle=c.dark;rr(cx,-r-4,-4.5,6,9,2.5);cx.fill();cx.stroke(); // exhaust
+  cx.strokeStyle='rgba(20,22,40,.28)';cx.lineWidth=1.6;
+  cx.beginPath();cx.moveTo(-r*.4,-r*.74);cx.lineTo(-r*.4,r*.74);cx.moveTo(r*.45,-r*.74);cx.lineTo(r*.45,r*.74);cx.stroke();
+  cx.strokeStyle=INK;cx.lineWidth=3.4;
   cx.restore();
   // barrel + muzzle flash follow the turret so shots go where the pilot looks
   cx.save();cx.translate(o.x,o.y);cx.scale(1+sq*.22,1-sq*.22);cx.rotate(ta);
@@ -1878,13 +1966,22 @@ function drawTankBody(o){
   cx.fillStyle=cg;cx.fillRect(-tr,-tr,tr*2,tr*2);
   cx.translate(0,tr*.16);
   drawFace(PILOTS[c.skin]||PILOTS.brawler,tr*.9,(o.inv>0?'hurt':o.mood||''),
-    Math.cos(o.ang),Math.sin(o.ang),(frame+(o.team||0)*77)%210<7);
+    Math.cos(o.tang==null?o.ang:o.tang),Math.sin(o.tang==null?o.ang:o.tang),(frame+(o.team||0)*77)%210<7);
   cx.restore();
   cx.beginPath();cx.arc(0,0,tr,0,Math.PI*2);cx.lineWidth=3.2;cx.strokeStyle=INK;cx.stroke();
   const ring=o.teamColor||(o.team!==undefined?TEAMS[o.team].color:null);
   if(ring){cx.lineWidth=2.6;cx.strokeStyle=ring;cx.beginPath();cx.arc(0,0,tr+4.5,0,Math.PI*2);cx.stroke()}
   cx.fillStyle='rgba(255,255,255,.4)';
   cx.beginPath();cx.ellipse(-tr*.4,-tr*.5,tr*.34,tr*.2,-.5,0,Math.PI*2);cx.fill();
+  // aerial with a little waving pennant in the team colour
+  if(ring){
+    const ax=tr*.72,ay=-tr*.72,wob=Math.sin(frame*.16+(o.team||0)*3)*2.5;
+    cx.strokeStyle=INK;cx.lineWidth=2;
+    cx.beginPath();cx.moveTo(ax,ay);cx.lineTo(ax+4,ay-13);cx.stroke();
+    cx.fillStyle=ring;cx.strokeStyle=INK;cx.lineWidth=1.8;
+    cx.beginPath();cx.moveTo(ax+4,ay-13);cx.lineTo(ax+15+wob,ay-10);cx.lineTo(ax+4,ay-6);cx.closePath();
+    cx.fill();cx.stroke();
+  }
   cx.restore();
   if(fx){
     if(o.shield>0){
@@ -1964,6 +2061,15 @@ function drawArenaFrame(){
   cx.globalAlpha=1;
   drawBullets();
   tanks.forEach(drawTank);
+  for(const t of tanks){
+    if(!(t.lock>14)||t.ai)continue;
+    const e=tanks[1-t.team];
+    if(!e||e.hp<=0)continue;
+    const rr2=e.cls.radius+13,a0=frame*.06;
+    cx.save();cx.globalAlpha=.5;cx.strokeStyle=t.teamColor;cx.lineWidth=3;cx.lineCap='round';
+    for(let k=0;k<4;k++){cx.beginPath();cx.arc(e.x,e.y,rr2,a0+k*Math.PI/2,a0+k*Math.PI/2+.5);cx.stroke()}
+    cx.restore();
+  }
   drawBushes();
   drawAmbient();
   for(const f of floats){
@@ -1978,7 +2084,14 @@ function drawArenaFrame(){
 /* ---------------- HUD ---------------- */
 function hudPlate(t,left){
   const w=216,h=62,x=left?14:W-14-w,y=H-h-12;
+  let near=false;
+  for(const k of tanks){
+    if(k.hp<=0)continue;
+    if(k.x>x-70&&k.x<x+w+70&&k.y>y-60)near=true;
+  }
+  t.plateA=t.plateA==null?1:t.plateA+((near?.22:1)-t.plateA)*.15;
   cx.save();
+  cx.globalAlpha=t.plateA;
   cx.fillStyle='rgba(34,35,59,.25)';rr(cx,x+4,y+5,w,h,12);cx.fill();
   cx.fillStyle=CREAM;rr(cx,x,y,w,h,12);cx.fill();
   cx.lineWidth=3.5;cx.strokeStyle=INK;rr(cx,x,y,w,h,12);cx.stroke();
@@ -2016,6 +2129,40 @@ function hudPlate(t,left){
     cx.lineWidth=2;cx.strokeStyle=p.color;cx.stroke();
     cx.fillStyle=p.color;cx.font='900 10px system-ui,Arial,sans-serif';cx.textAlign='center';
     cx.fillText(p.glyph,chx+8,chy+1);
+  }
+  // the item slot sits beside the plate and spins like a kart item box
+  cx.globalAlpha=1;
+  const spin=t.roul,landed=t.lastRoll&&t.lastRoll.ttl>0;
+  if(spin||landed){
+    const sw=54,sx=left?x+w+10:x-10-sw,sy=y+h-sw;
+    const pop=landed?1+Math.max(0,(t.lastRoll.ttl-92)/18)*.35:1;
+    cx.save();cx.translate(sx+sw/2,sy+sw/2);cx.scale(pop,pop);
+    cx.fillStyle='rgba(12,14,26,.4)';rr(cx,-sw/2+4,-sw/2+5,sw,sw,12);cx.fill();
+    const gg=cx.createLinearGradient(0,-sw/2,0,sw/2);
+    gg.addColorStop(0,'#fffaf0');gg.addColorStop(1,'#efe2c8');
+    cx.fillStyle=gg;rr(cx,-sw/2,-sw/2,sw,sw,12);cx.fill();
+    cx.strokeStyle=INK;cx.lineWidth=3.5;rr(cx,-sw/2,-sw/2,sw,sw,12);cx.stroke();
+    cx.save();cx.beginPath();rr(cx,-sw/2+5,-sw/2+5,sw-10,sw-10,8);cx.clip();
+    if(spin){
+      const ph=(spin.n%6)/6;
+      for(let k=-1;k<=1;k++){
+        const p=POWERS[(spin.idx+k+POWERS.length)%POWERS.length];
+        cx.fillStyle=p.color;cx.font='900 22px system-ui,Arial,sans-serif';
+        cx.textAlign='center';cx.textBaseline='middle';cx.fillText(p.glyph,0,(k+ph)*30);
+      }
+    }else{
+      const p=t.lastRoll.def;
+      cx.fillStyle=p.color;cx.font='900 26px system-ui,Arial,sans-serif';
+      cx.textAlign='center';cx.textBaseline='middle';cx.fillText(p.glyph,0,0);
+    }
+    cx.restore();
+    if(landed){
+      cx.lineWidth=3;cx.strokeStyle=t.lastRoll.def.color;
+      rr(cx,-sw/2+3,-sw/2+3,sw-6,sw-6,10);cx.stroke();
+      cx.fillStyle=INK;cx.font='800 9px system-ui,Arial,sans-serif';cx.textAlign='center';
+      cx.fillText(t.lastRoll.def.label,0,sw/2+10);
+    }
+    cx.restore();
   }
   cx.restore();
 }
@@ -2302,8 +2449,8 @@ function drawSelect(){
         cx.lineWidth=1.5;cx.strokeStyle=INK;cx.stroke();
       }
     }
-    label(c.desc,x+104,y+108,11,INK,'left');
-    label('HP '+c.hp,x+104,y+126,10,'#8a8672','left');
+    label(c.desc+'  ·  HP '+c.hp,x+104,y+104,10.5,INK,'left');
+    label('★ '+c.perk,x+104,y+122,9.5,'#b3202c','left');
     // lock overlay
     const p0=prof(0),p1=prof(1);
     const lockedFor=[!isUnlocked(i,p0),!isUnlocked(i,p1)];
