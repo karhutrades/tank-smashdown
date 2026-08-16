@@ -7,7 +7,7 @@ G.pressKeys('Space'); G.tick(2);
 G.need(G.state === 'mode', 'title -> mode');
 
 // ---- campaign ----
-G.pressKeys('KeyS'); G.tick(2); G.pressKeys('Space'); G.tick(2);
+G.gotoMode('campaign'); G.tick(2); G.pressKeys('Space'); G.tick(2);
 G.need(G.state === 'campmenu', 'mode -> campmenu');
 G.pressKeys('Space'); G.tick(2);
 G.need(G.state === 'select', 'campmenu -> select');
@@ -21,7 +21,7 @@ console.log('campaign resolved in', guard, 'ticks; winner', G.roundWinner.tag, '
 // ---- profiles ----
 G.pressKeys('Escape'); G.tick(3);
 G.need(G.state === 'mode', 'game -> mode');
-G.menuIdx = 4; G.pressKeys('Space'); G.tick(3);
+G.gotoMode('profiles'); G.pressKeys('Space'); G.tick(3);
 G.need(G.state === 'profiles', 'mode -> profiles');
 G.pressKeys('KeyS'); G.tick(2); G.pressKeys('KeyD'); G.tick(2);
 const colour = G.profiles[G.slots[0]].color;
@@ -34,7 +34,7 @@ G.need(G.state === 'mode', 'profiles -> mode');
 G.need(G.stored().profiles[0].name === 'DAN', 'profile not persisted to storage');
 
 // ---- solo duel vs bot ----
-G.menuIdx = 0; G.pressKeys('Space'); G.tick(3);
+G.gotoMode('duel'); G.pressKeys('Space'); G.tick(3);
 G.need(G.state === 'difficulty', 'mode -> difficulty');
 G.pressKeys('KeyD'); G.tick(2); G.pressKeys('Space'); G.tick(3);
 G.need(G.state === 'select', 'difficulty -> select');
@@ -46,7 +46,7 @@ console.log('duel resolved in', guard, 'ticks; score', G.tanks.map(t => t.score)
 
 // ---- co-op (both idle: should just run) ----
 G.pressKeys('Escape'); G.tick(3);
-G.menuIdx = 2; G.pressKeys('Space'); G.tick(3);
+G.gotoMode('coop'); G.pressKeys('Space'); G.tick(3);
 G.need(G.state === 'select', 'mode -> coop select');
 G.pressKeys('Space'); G.tick(3); G.pressKeys('Enter'); G.tick(70);
 G.need(['ready', 'play'].includes(G.state), 'coop match start');

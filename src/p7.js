@@ -107,26 +107,96 @@ function drawTitle(){
   footer(TOUCH.on?'TAP TO START   ·   ⛶ FOR FULLSCREEN':'P1: WASD + SPACE   ·   P2: ARROWS + ENTER   ·   AUTO-AIM ON   ·   F: FULLSCREEN   ·   N: MUSIC');
 }
 /* ---------------- mode select ---------------- */
-function drawMode(){
-  screenBg();
-  splash('CHOOSE A MODE',44,54);
-  const w=560,h=62,x=(W-w)/2;
-  MODES.forEach((m,i)=>{
-    const y=104+i*74,on=i===menuIdx;
-    if(on){cx.fillStyle=prof(0).color;rr(cx,x-7,y-7,w+14,h+14,18);cx.fill()}
-    panel(x,y,w,h,null,14);
-    label(m.title,x+22,y+24,20,INK,'left');
-    label(m.sub,x+22,y+46,12,'#8a8672','left');
-    label(m.hint,x+w-22,y+31,11,'#8a8672','right');
-    if(on){
-      cx.fillStyle=prof(0).color;
-      cx.beginPath();cx.moveTo(x-24,y+h/2-9);cx.lineTo(x-10,y+h/2);cx.lineTo(x-24,y+h/2+9);cx.closePath();cx.fill();
-      cx.strokeStyle=INK;cx.lineWidth=2.5;cx.stroke();
+function modeIcon(kind,x,y,r,col){
+  cx.save();cx.translate(x,y);
+  cx.lineWidth=3;cx.strokeStyle=INK;cx.fillStyle=col;
+  if(kind==='duel'||kind==='vs'){
+    cx.beginPath();cx.arc(-r*.45,0,r*.42,0,Math.PI*2);cx.fill();cx.stroke();
+    cx.fillStyle=kind==='vs'?'#35a44a':'#8a8672';
+    cx.beginPath();cx.arc(r*.45,0,r*.42,0,Math.PI*2);cx.fill();cx.stroke();
+  }else if(kind==='flag'){
+    cx.beginPath();cx.moveTo(-r*.4,r*.6);cx.lineTo(-r*.4,-r*.7);cx.stroke();
+    cx.beginPath();cx.moveTo(-r*.4,-r*.7);cx.lineTo(r*.6,-r*.35);cx.lineTo(-r*.4,0);cx.closePath();
+    cx.fill();cx.stroke();
+  }else if(kind==='wave'){
+    for(let i=0;i<3;i++){
+      cx.globalAlpha=1-i*.25;
+      cx.beginPath();cx.arc(0,0,r*(.35+i*.28),Math.PI*.15,Math.PI*.85);cx.lineWidth=4;
+      cx.strokeStyle=col;cx.stroke();
     }
+    cx.globalAlpha=1;
+  }else if(kind==='ball'){
+    cx.fillStyle='#fff';cx.beginPath();cx.arc(0,0,r*.7,0,Math.PI*2);cx.fill();cx.stroke();
+    cx.fillStyle=INK;
+    for(let i=0;i<5;i++){const a=i/5*Math.PI*2;cx.beginPath();cx.arc(Math.cos(a)*r*.38,Math.sin(a)*r*.38,r*.15,0,Math.PI*2);cx.fill()}
+    cx.beginPath();cx.arc(0,0,r*.18,0,Math.PI*2);cx.fill();
+  }else if(kind==='zone'){
+    cx.setLineDash([6,5]);cx.strokeStyle=col;cx.lineWidth=4;
+    cx.beginPath();cx.arc(0,0,r*.72,0,Math.PI*2);cx.stroke();cx.setLineDash([]);
+    cx.fillStyle=col;cx.beginPath();cx.arc(0,0,r*.28,0,Math.PI*2);cx.fill();
+  }else if(kind==='boss'){
+    cx.beginPath();cx.moveTo(0,-r*.8);cx.lineTo(r*.75,-r*.2);cx.lineTo(r*.5,r*.7);
+    cx.lineTo(-r*.5,r*.7);cx.lineTo(-r*.75,-r*.2);cx.closePath();cx.fill();cx.stroke();
+    cx.fillStyle='#ffd166';
+    cx.beginPath();cx.arc(-r*.25,0,r*.13,0,Math.PI*2);cx.arc(r*.25,0,r*.13,0,Math.PI*2);cx.fill();
+  }else if(kind==='net'){
+    cx.beginPath();cx.arc(0,0,r*.72,0,Math.PI*2);cx.stroke();
+    cx.beginPath();cx.ellipse(0,0,r*.32,r*.72,0,0,Math.PI*2);cx.stroke();
+    cx.beginPath();cx.moveTo(-r*.72,0);cx.lineTo(r*.72,0);cx.stroke();
+  }else if(kind==='card'){
+    rr(cx,-r*.8,-r*.55,r*1.6,r*1.1,5);cx.fill();cx.stroke();
+    cx.fillStyle=CREAM;cx.beginPath();cx.arc(-r*.35,-r*.05,r*.25,0,Math.PI*2);cx.fill();
+    cx.fillRect(r*.02,-r*.2,r*.62,r*.12);cx.fillRect(r*.02,r*.02,r*.45,r*.12);
+  }
+  cx.restore();
+}
+function drawMode(){
+  screenBg('#232744');
+  splash('CHOOSE A MODE',40,42);
+  const cw=280,ch=124,gx=14,gy=13,x0=(W-3*cw-2*gx)/2,y0=78;
+  MODES.forEach((m,i)=>{
+    const col=i%3,row=(i/3)|0,x=x0+col*(cw+gx),y=y0+row*(ch+gy),on=i===menuIdx;
+    if(on)selectRing(x,y,cw,ch,m.col,16);
+    panel(x,y,cw,ch,m.col,16);
+    modeIcon(m.icon,x+50,y+74,26,m.col);
+    label(m.title,x+90,y+17,14,'#fff','left');
+    label(m.sub,x+90,y+62,11.5,INK,'left');
+    if(m.two)label('1 OR 2 PLAYERS',x+90,y+84,9.5,'#8a8672','left');
+    else label(m.id==='profiles'?'SAVED LOCALLY':'ONE PLAYER',x+90,y+84,9.5,'#8a8672','left');
+    const p=prof(0);
+    let badge='';
+    if(m.id==='survival'&&(p.stats.bestWave|0))badge='BEST WAVE '+p.stats.bestWave;
+    if(m.id==='campaign')badge=(p.stats.campaign|0)+'/'+MAPS.length;
+    if(m.id==='boss'&&(p.stats.bosses|0))badge=p.stats.bosses+' DOWNED';
+    if(badge)label(badge,x+cw-12,y+84,9.5,m.col,'right');
   });
-  label('P1: '+prof(0).name+'   ·   P2: '+prof(1).name,W/2,H-42,13,'#c9c4ae');
-  footer(TOUCH.on?'TAP A MODE, TAP AGAIN TO GO':'MOVE: W/S OR ARROWS      SELECT: SPACE / ENTER      BACK: ESC');
+  label('P1: '+prof(0).name+'   ·   P2: '+prof(1).name,W/2,H-42,12,'#c9c4ae');
+  footer(TOUCH.on?'TAP A MODE, TAP AGAIN TO GO':'MOVE: WASD / ARROWS      SELECT: SPACE / ENTER      BACK: ESC');
   drawToast();
+}
+/* ---------------- how many players ---------------- */
+function drawPlayers(){
+  screenBg('#232744');
+  const m=MODES.find(x=>x.id===mode)||MODES[0];
+  splash(m.title,46,60,-.03,m.col);
+  label(m.sub,W/2,104,15,'#c9c4ae');
+  const cards=[
+    {t:'SOLO',s:mode==='ball'||mode==='zone'?'YOU VS A BOT':'ONE PLAYER, ALL THE BOTS',n:1},
+    {t:'TWO PLAYERS',s:mode==='ball'||mode==='zone'?'HEAD TO HEAD':'CO-OP ON ONE KEYBOARD',n:2},
+  ];
+  cards.forEach((c,i)=>{
+    const cw=300,ch=190,x=W/2-cw-20+i*(cw+40),y=150,on=i===subIdx;
+    if(on)selectRing(x,y,cw,ch,m.col,16);
+    panel(x,y,cw,ch,m.col,16);
+    label(c.t,x+cw/2,y+17,16,'#fff');
+    for(let p=0;p<c.n;p++){
+      cx.save();cx.translate(x+cw/2+(c.n===1?0:(p?46:-46)),y+96);cx.scale(1.25,1.25);
+      drawTankBody({x:0,y:0,ang:p?Math.PI:0,cls:CLASSES[p?3:1],teamColor:TEAMS[p].color,recoil:0,dist:frame});
+      cx.restore();
+    }
+    label(c.s,x+cw/2,y+156,12,INK);
+  });
+  footer('MOVE: A/D OR ARROWS      START: SPACE / ENTER      BACK: ESC');
 }
 
 /* ---------------- difficulty ---------------- */
@@ -195,19 +265,21 @@ function drawProfiles(){
     label(unlockedCount(p)+' / '+CLASSES.length+' TANKS UNLOCKED',x+120,y+110,12,'#8a8672','left');
     const s=p.stats,rows=[
       ['WINS',s.wins],['LOSSES',s.losses],['KOs',s.kos],
-      ['ROUNDS',s.rounds],['CAMPAIGN',s.campaign+' / '+MAPS.length],
+      ['CAMPAIGN',s.campaign+' / '+MAPS.length],
+      ['BEST WAVE',s.bestWave|0],['BEST SCORE',s.bestScore|0],
+      ['OMEGA KILLS',s.bosses|0],
     ];
     rows.forEach((r,i)=>{
-      const ry=y+150+i*26;
+      const ry=y+146+i*22;
       label(r[0],x+24,ry,12,'#8a8672','left');
       cx.font='800 14px system-ui,Arial,sans-serif';cx.textAlign='right';
       cx.fillStyle=INK;cx.fillText(String(r[1]),x+w-24,ry);
     });
     let fav='-',best=0;
     for(const k in s.plays)if(s.plays[k]>best){best=s.plays[k];fav=k}
-    label('FAVOURITE TANK',x+24,y+286,12,'#8a8672','left');
+    label('FAVOURITE TANK',x+24,y+300,12,'#8a8672','left');
     cx.font='800 14px system-ui,Arial,sans-serif';cx.textAlign='right';cx.fillStyle=INK;
-    cx.fillText(fav,x+w-24,y+286);
+    cx.fillText(fav,x+w-24,y+300);
     // editable rows
     const fields=[['PROFILE','< '+p.name+' >'],['COLOUR',''],['RENAME','PRESS SELECT'],['NEW PROFILE','PRESS SELECT']];
     fields.forEach((f,i)=>{
@@ -327,18 +399,93 @@ function drawSelect(){
 }
 
 /* ---------------- in-game overlays ---------------- */
+function drawAnnounce(){
+  if(!ann)return;
+  const f=ann.life/ann.t0,pop=1+Math.max(0,(f-.82))*2.2;
+  cx.save();cx.globalAlpha=Math.min(1,f*3);
+  cx.translate(W/2,150);cx.scale(pop,pop);
+  splash(ann.txt,44,0,-.02,ann.color);
+  cx.restore();
+}
+function drawRunHud(){
+  const k=kindOf();
+  panel(W/2-150,8,300,44,null,12);
+  // lives as little tank hearts
+  for(let i=0;i<Math.max(0,lives);i++){
+    const hx=W/2-150+18+i*20,hy=66;
+    cx.fillStyle='#ef3e4a';cx.beginPath();
+    cx.moveTo(hx,hy+4);cx.bezierCurveTo(hx-8,hy-4,hx-3,hy-9,hx,hy-4);
+    cx.bezierCurveTo(hx+3,hy-9,hx+8,hy-4,hx,hy+4);cx.fill();
+    cx.lineWidth=2;cx.strokeStyle=INK;cx.stroke();
+  }
+  if(k==='survival'){
+    label('WAVE',W/2-118,22,10,'#8a8672');
+    cx.fillStyle=INK;cx.font='900 20px system-ui,Arial,sans-serif';
+    cx.textAlign='center';cx.textBaseline='middle';cx.fillText(String(wave),W/2-118,39);
+    label('SCORE',W/2+10,22,10,'#8a8672');
+    cx.fillStyle=INK;cx.font='900 20px system-ui,Arial,sans-serif';
+    cx.fillText(String(score),W/2+10,39);
+    const foes=tanks.filter(t=>t.side===1&&!t.dead).length;
+    label('LEFT',W/2+118,22,10,'#8a8672');
+    cx.fillStyle=foes?'#ef3e4a':'#35a44a';cx.font='900 20px system-ui,Arial,sans-serif';
+    cx.fillText(String(foes),W/2+118,39);
+  }else{
+    const b=tanks.find(t=>t.boss);
+    label(b?'OMEGA · PHASE '+b.phase:'OMEGA DOWN',W/2,20,11,'#8a8672');
+    const bw=260,bx=W/2-bw/2,by=30,f=b?Math.max(0,b.hp/b.maxHp):0;
+    cx.fillStyle='#d8cbb4';rr(cx,bx,by,bw,14,7);cx.fill();
+    const g=cx.createLinearGradient(bx,0,bx+bw,0);
+    g.addColorStop(0,'#7b2d26');g.addColorStop(1,'#ef3e4a');
+    cx.fillStyle=g;rr(cx,bx+1.5,by+1.5,Math.max(0,(bw-3)*f),11,5);cx.fill();
+    cx.lineWidth=2.5;cx.strokeStyle=INK;rr(cx,bx,by,bw,14,7);cx.stroke();
+  }
+}
+function drawBallHud(){
+  panel(W/2-108,8,216,46,null,12);
+  for(let i=0;i<2;i++){
+    const x=W/2+(i?54:-54);
+    cx.fillStyle=teamColor(i);cx.font='900 30px system-ui,Arial,sans-serif';
+    cx.textAlign='center';cx.textBaseline='middle';cx.fillText(String(goals[i]),x,32);
+  }
+  label('FIRST TO '+BALL_TARGET,W/2,32,10,'#8a8672');
+}
+function drawZoneHud(){
+  panel(W/2-160,8,320,44,null,12);
+  for(let i=0;i<2;i++){
+    const bw=130,bx=W/2+(i?18:-148),by=26;
+    cx.fillStyle='#d8cbb4';rr(cx,bx,by,bw,15,7);cx.fill();
+    cx.fillStyle=teamColor(i);rr(cx,bx+1.5,by+1.5,Math.max(0,(bw-3)*caps[i]/100),12,5);cx.fill();
+    cx.lineWidth=2.5;cx.strokeStyle=INK;rr(cx,bx,by,bw,15,7);cx.stroke();
+    label((tanks[i]&&tanks[i].name||('P'+(i+1))).slice(0,10),bx+bw/2,18,9.5,'#8a8672');
+  }
+  label('HOLD',W/2,34,10,'#8a8672');
+}
 function drawGameplay(){
   const m=MAPS[mapIndex];
   drawArenaFrame();
-  hudPlate(tanks[0],true);hudPlate(tanks[1],false);
+  const k=kindOf();
+  if(k==='survival'||k==='boss'){
+    const ps=players();
+    if(ps[0])hudPlate(ps[0],true);
+    if(ps[1])hudPlate(ps[1],false);
+    drawRunHud();
+  }else{
+    if(tanks[0])hudPlate(tanks[0],true);
+    if(tanks[1])hudPlate(tanks[1],false);
+    if(k==='ball')drawBallHud();
+    if(k==='zone')drawZoneHud();
+  }
+  drawAnnounce();
   if(state==='ready'){
     tanks.forEach(drawTeamTag);
     const e=Math.min(1,(110-timer)/22),bx=-340+(W/2+170+340)*(1-Math.pow(1-e,3));
-    panel(bx-330,14,330,44,null,12);
-    label(m.name,bx-165,30,17,INK);
-    const line=mode==='campaign'?('STAGE '+(campStage+1)+'/'+MAPS.length+'  ·  ONE KO WINS'):
-      (m.world.toUpperCase()+' WORLD  ·  STAGE '+(mapIndex+1)+'/'+MAPS.length+'  ·  FIRST TO '+WIN_SCORE);
-    label(line,bx-165,46,11,'#8a8672');
+    if(isRounds())panel(bx-330,14,330,44,null,12);
+    if(isRounds()){
+      label(m.name,bx-165,30,17,INK);
+      const line=mode==='campaign'?('STAGE '+(campStage+1)+'/'+MAPS.length+'  ·  ONE KO WINS'):
+        (m.world.toUpperCase()+' WORLD  ·  STAGE '+(mapIndex+1)+'/'+MAPS.length+'  ·  FIRST TO '+WIN_SCORE);
+      label(line,bx-165,46,11,'#8a8672');
+    }
     const num=timer>70?'3':timer>40?'2':timer>15?'1':'GO!!';
     const col=timer>70?'#ef3e4a':timer>40?'#ffd23f':timer>15?'#35a44a':'#ffd166';
     const band=timer>70?(timer-70)/40:timer>40?(timer-40)/30:timer>15?(timer-15)/25:timer/15;
@@ -347,10 +494,13 @@ function drawGameplay(){
     splash(num,num==='GO!!'?96:120,H/2-20,-.03,col);
     cx.restore();
     if(timer>15)label('AIM IS AUTOMATIC · GET CLOSE AND HOLD FIRE',W/2,H/2+64,13,'#fff');
-  }else{
+  }else if(isRounds()){
     panel(W/2-130,8,260,26,null,9);
     const goal=mode==='campaign'?'ONE KO WINS':'FIRST TO '+WIN_SCORE;
     label(m.name+'  ·  '+(mode==='campaign'?('STAGE '+(campStage+1)):((mapIndex+1)+'/'+MAPS.length))+'  ·  '+goal,W/2,21,12,INK);
+  }else{
+    // mode HUDs live at the top, so the arena name sits quietly in the corner
+    label(m.name,14,H-88,10.5,'rgba(255,255,255,.5)','left');
   }
   if(state==='round'){
     const loser=tanks[1-roundWinner.team];
@@ -369,6 +519,32 @@ function drawGameplay(){
     splash('★',40,H/2+22,0,'#ffd166');
   }else if(state==='game'){
     cx.fillStyle='rgba(34,35,59,.45)';cx.fillRect(0,0,W,H);
+    const k2=kindOf();
+    if(k2==='survival'||k2==='boss'){
+      const won=k2==='boss'&&!tanks.some(t=>t.boss&&!t.dead);
+      splash(won?'OMEGA DOWN!':k2==='survival'?'RUN OVER':'WIPED OUT',86,H/2-70,-.04,won?'#ffd166':'#ef3e4a');
+      if(k2==='survival'){
+        splash('WAVE '+(wave-1)+' REACHED',40,H/2+6,-.02,'#fff');
+        splash('SCORE '+score,32,H/2+52,0,'#c9c4ae');
+        const best=prof(0).stats.bestWave|0;
+        if(wave-1>=best&&best>0)splash('NEW BEST!',26,H/2+90,0,'#35a44a');
+      }else{
+        splash(won?('SCORE '+score):'OMEGA SURVIVED',32,H/2+16,0,'#c9c4ae');
+      }
+      if(timer<=0&&(frame/30|0)%2===0)
+        splash(TOUCH.on?'TAP TO PLAY AGAIN':'SPACE: PLAY AGAIN   ·   ESC: MENU',22,H/2+130,0);
+      drawToast();cx.restore();return;
+    }
+    if(k2==='ball'||k2==='zone'){
+      const win=roundWinner;
+      splash(k2==='ball'?'FULL TIME!':'ZONE SECURED!',80,H/2-70,-.04,'#ffd166');
+      splash((win&&win.name||'PLAYER')+' WINS',42,H/2+6,-.02,win?win.teamColor:'#fff');
+      if(k2==='ball')splash(goals[0]+' - '+goals[1],34,H/2+54,0,'#c9c4ae');
+      if(timer<=0&&(frame/30|0)%2===0)
+        splash(TOUCH.on?'TAP TO PLAY AGAIN':'SPACE: PLAY AGAIN   ·   ESC: MENU',22,H/2+110,0);
+      drawToast();cx.restore();return;
+    }
+
     for(const c of conf){
       cx.save();cx.translate(c.x,c.y);cx.rotate(c.rot);
       cx.fillStyle=c.color;cx.fillRect(-c.w/2,-c.h/2,c.w,c.h);
@@ -397,6 +573,7 @@ function draw(){
   cx.clearRect(-20,-20,W+40,H+40);
   if(state==='title')drawTitle();
   else if(state==='mode')drawMode();
+  else if(state==='players')drawPlayers();
   else if(state==='difficulty')drawDifficulty();
   else if(state==='campmenu')drawCampMenu();
   else if(state==='profiles')drawProfiles();

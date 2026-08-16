@@ -231,7 +231,19 @@ function drawTankBody(o){
   cx.globalAlpha=1;
 }
 function drawTank(t){
-  if(t.hp<=0)return;
+  if(t.dead||t.hp<=0){
+    if(t.dead&&t.side===0){
+      const a=1-t.respawn/RESPAWN;
+      cx.save();cx.globalAlpha=.7;
+      cx.strokeStyle=t.teamColor;cx.lineWidth=4;
+      cx.beginPath();cx.arc(t.x,t.y,20,-Math.PI/2,-Math.PI/2+Math.PI*2*a);cx.stroke();
+      cx.fillStyle=t.teamColor;cx.font='900 12px system-ui,Arial,sans-serif';
+      cx.textAlign='center';cx.textBaseline='middle';
+      cx.fillText(Math.ceil(t.respawn/60)+'s',t.x,t.y+1);
+      cx.restore();
+    }
+    return;
+  }
   if(tileAt(t.x,t.y)==='b'&&state==='play')return; // hidden in a bush
   if(t.inv>0&&(t.inv>>2)%2===0)return;
   drawTankBody(t);
@@ -281,8 +293,67 @@ function drawBullets(){
     cx.beginPath();cx.arc(b.x,b.y,b.r,0,Math.PI*2);cx.fill();cx.stroke();
   }
 }
+function drawGoals(){
+  const gh=GOAL_H,gy=H/2-gh/2,w=GOAL_D-T;
+  for(const [side,col] of [[0,teamColor(0)],[1,teamColor(1)]]){
+    const x=side===0?T:W-GOAL_D;
+    cx.save();
+    cx.globalAlpha=.25;cx.fillStyle=col;cx.fillRect(x,gy,w,gh);
+    cx.globalAlpha=1;cx.strokeStyle=col;cx.lineWidth=5;
+    cx.beginPath();cx.moveTo(side===0?x+w:x,gy);cx.lineTo(side===0?x+w:x,gy+gh);cx.stroke();
+    cx.globalAlpha=.4;cx.lineWidth=1.5;cx.strokeStyle='#fff';
+    for(let i=0;i<=6;i++){cx.beginPath();cx.moveTo(x,gy+i*gh/6);cx.lineTo(x+w,gy+i*gh/6);cx.stroke()}
+    for(let i=0;i<=5;i++){cx.beginPath();cx.moveTo(x+i*w/5,gy);cx.lineTo(x+i*w/5,gy+gh);cx.stroke()}
+    cx.globalAlpha=.85;cx.fillStyle=col;cx.font='900 11px system-ui,Arial,sans-serif';
+    cx.textAlign='center';cx.textBaseline='middle';
+    cx.fillText('GOAL',x+w/2,gy-12);
+    cx.restore();
+  }
+  // centre circle
+  cx.save();cx.globalAlpha=.18;cx.strokeStyle='#fff';cx.lineWidth=4;
+  cx.beginPath();cx.arc(W/2,H/2,70,0,Math.PI*2);cx.stroke();
+  cx.beginPath();cx.moveTo(W/2,30);cx.lineTo(W/2,H-30);cx.stroke();
+  cx.restore();
+}
+function drawZone(){
+  if(!zone)return;
+  const col=zone.owner===0?teamColor(0):zone.owner===1?teamColor(1):'#ffd166';
+  const pulse=1+Math.sin(frame*.09)*.04;
+  cx.save();
+  cx.globalAlpha=.16;cx.fillStyle=col;
+  cx.beginPath();cx.arc(zone.x,zone.y,zone.r*pulse,0,Math.PI*2);cx.fill();
+  cx.globalAlpha=.9;cx.strokeStyle=col;cx.lineWidth=5;cx.setLineDash([13,9]);
+  cx.lineDashOffset=-frame*.7;
+  cx.beginPath();cx.arc(zone.x,zone.y,zone.r*pulse,0,Math.PI*2);cx.stroke();
+  cx.setLineDash([]);
+  cx.globalAlpha=.5;cx.lineWidth=2.5;
+  cx.beginPath();cx.arc(zone.x,zone.y,zone.r*pulse*.55,0,Math.PI*2);cx.stroke();
+  // countdown wedge for the next move
+  cx.globalAlpha=.8;cx.strokeStyle='#fff';cx.lineWidth=4;
+  cx.beginPath();cx.arc(zone.x,zone.y,zone.r*pulse+9,-Math.PI/2,-Math.PI/2+Math.PI*2*(zone.life/(60*22)));cx.stroke();
+  cx.restore();
+}
+function drawBall(){
+  if(!ball)return;
+  cx.fillStyle='rgba(12,14,26,.3)';
+  cx.beginPath();cx.ellipse(ball.x,ball.y+ball.r*.8,ball.r*.9,ball.r*.4,0,0,Math.PI*2);cx.fill();
+  cx.save();cx.translate(ball.x,ball.y);cx.rotate(ball.spin);
+  const g=cx.createRadialGradient(-5,-6,3,0,0,ball.r);
+  g.addColorStop(0,'#ffffff');g.addColorStop(1,'#cfd6e6');
+  cx.fillStyle=g;cx.beginPath();cx.arc(0,0,ball.r,0,Math.PI*2);cx.fill();
+  cx.fillStyle=INK;
+  cx.beginPath();
+  for(let i=0;i<5;i++){const a=i/5*Math.PI*2;cx.moveTo(Math.cos(a)*7,Math.sin(a)*7);
+    cx.arc(Math.cos(a)*8.5,Math.sin(a)*8.5,3.4,0,Math.PI*2)}
+  cx.fill();
+  cx.beginPath();cx.arc(0,0,4.2,0,Math.PI*2);cx.fill();
+  cx.lineWidth=3;cx.strokeStyle=INK;cx.beginPath();cx.arc(0,0,ball.r,0,Math.PI*2);cx.stroke();
+  cx.restore();
+}
 function drawArenaFrame(){
   cx.drawImage(bg,0,0);
+  if(kindOf()==='ball')drawGoals();
+  if(kindOf()==='zone')drawZone();
   drawMarks();
   drawDynamicTiles();
   drawCrates();
@@ -313,6 +384,7 @@ function drawArenaFrame(){
     cx.beginPath();cx.arc(rg.x,rg.y,rg.r,0,Math.PI*2);cx.stroke();
   }
   cx.restore();cx.globalAlpha=1;
+  drawBall();
   drawBullets();
   for(const t of tanks){
     if(!(t.charge>0)||t.hp<=0)continue;

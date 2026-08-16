@@ -1,21 +1,37 @@
 /* ---------------- menus ---------------- */
 function goto(s){state=s;pressQ.clear()}
-function participants(){return mode==='coop'?2:1}  // online picks locally on each machine
+function participants(){return (mode==='coop'||coopPlayers)?2:1}  // online picks locally on each machine
 function stepTitle(){if(navOk()){sGo();menuIdx=0;goto('mode')}}
-function stepMode(){
-  if(navUp()){menuIdx=(menuIdx+MODES.length-1)%MODES.length;sTick()}
-  if(navDown()){menuIdx=(menuIdx+1)%MODES.length;sTick()}
+function stepModeMenu(){
+  const cols=3;
+  if(navUp()){menuIdx=(menuIdx+MODES.length-cols)%MODES.length;sTick()}
+  if(navDown()){menuIdx=(menuIdx+cols)%MODES.length;sTick()}
+  if(navLeft()){menuIdx=(menuIdx+MODES.length-1)%MODES.length;sTick()}
+  if(navRight()){menuIdx=(menuIdx+1)%MODES.length;sTick()}
   if(navBack()){sBack();goto('title')}
   if(navOk()){
     const id=MODES[menuIdx].id;sLock();
     if(id==='profiles'){profTeam=0;profField=0;goto('profiles')}
-    else if(id==='duel'){mode='duel';subIdx=aiLevel;goto('difficulty')}
+    else if(id==='duel'){mode='duel';coopPlayers=false;subIdx=aiLevel;goto('difficulty')}
     else if(id==='campaign'){
-      mode='campaign';campStage=Math.min(prof(0).stats.campaign|0,MAPS.length-1);
+      mode='campaign';coopPlayers=false;
+      campStage=Math.min(prof(0).stats.campaign|0,MAPS.length-1);
       subIdx=campStage;goto('campmenu');
     }
-    else if(id==='online'){mode='online';goto('online')}
-    else{mode='coop';enterSelect()}
+    else if(id==='online'){mode='online';coopPlayers=false;goto('online')}
+    else if(id==='coop'){mode='coop';coopPlayers=true;enterSelect()}
+    else{mode=id;subIdx=0;goto('players')}
+  }
+}
+/* how many humans for the new modes */
+function stepPlayers(){
+  if(navLeft()||navUp()){subIdx=(subIdx+1)%2;sTick()}
+  if(navRight()||navDown()){subIdx=(subIdx+1)%2;sTick()}
+  if(navBack()){sBack();goto('mode')}
+  if(navOk()){
+    coopPlayers=subIdx===1;sLock();
+    if((mode==='ball'||mode==='zone')&&!coopPlayers){aiLevel=1}
+    enterSelect();
   }
 }
 function stepDifficulty(){
@@ -66,7 +82,7 @@ function stepSelect(){
   if(navBack()&&!allLocked()){sBack();goto('mode');return}
   if(allLocked()){
     if(netBlockStart&&netBlockStart())selTimer=50;
-    else if(--selTimer<=0)startMatch();
+    else if(--selTimer<=0){if(isRounds())startMatch();else setupMode()}
   }else selTimer=50;
 }
 function allLocked(){
@@ -122,6 +138,11 @@ function stepRoundEnd(){
 }
 function stepGameOver(){
   if(timer>0)timer--;
+  else if(navOk()&&!isRounds()){
+    sGo();
+    if(kindOf()==='boss')bossRound++;
+    setupMode();return;
+  }
   else if(navOk()){
     if(mode==='campaign'){
       if(campResult==='CLEARED'){campStage=Math.min(campStage+1,MAPS.length-1);sGo();startMatch();return}
@@ -224,6 +245,7 @@ function step(){
   for(let i=marks.length-1;i>=0;i--){if(--marks[i].life<=0)marks.splice(i,1)}
   if(marks.length>240)marks.splice(0,marks.length-240);
   if(toast&&--toast.life<=0)toast=null;
+  if(ann&&--ann.life<=0)ann=null;
   if(shake>0)shake*=.86;
   if(flash>0)flash=Math.max(0,flash-.06);
   for(let i=rings.length-1;i>=0;i--){const rg=rings[i];rg.r+=rg.vr;if(--rg.life<=0)rings.splice(i,1)}
@@ -238,7 +260,8 @@ function step(){
   stepAmbient();
   if(hitstop>0){hitstop--;pressQ.clear();return}
   if(state==='title')stepTitle();
-  else if(state==='mode')stepMode();
+  else if(state==='mode')stepModeMenu();
+  else if(state==='players')stepPlayers();
   else if(state==='difficulty')stepDifficulty();
   else if(state==='campmenu')stepCampMenu();
   else if(state==='profiles')stepProfiles();
@@ -251,7 +274,7 @@ function step(){
     if(timer===15&&!goPinged){sCdGo();goPinged=true}
     if(--timer<=0)state='play';
   }
-  else if(state==='play')stepPlay();
+  else if(state==='play'){stepPlay();if(state==='play'&&!isRounds())stepMode();}
   else if(state==='round')stepRoundEnd();
   else if(state==='game')stepGameOver();
   pressQ.clear();

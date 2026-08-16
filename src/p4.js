@@ -38,7 +38,7 @@ function startRound(){
 }
 function makeTank(team,clsIdx,human,aiCfg,hpBonus,colorOverride){
   const c=CLASSES[clsIdx];
-  return{team,tag:TEAMS[team].tag,cls:c,clsIdx,human,ai:aiCfg||null,
+  return{team,side:team,dead:false,respawn:0,mass:1,kills:0,tag:TEAMS[team].tag,cls:c,clsIdx,human,ai:aiCfg||null,
     profColor:colorOverride||null,maxHp:c.hp+(hpBonus||0),
     x:0,y:0,ang:0,tang:0,hp:1,cd:0,inv:0,recoil:0,score:0,lock:0,roul:null,
     name:human?(prof(team).name):(aiCfg?('CPU · '+aiCfg.name):'CPU')};
@@ -124,7 +124,7 @@ function fire(t,chargeDist){
   if(g.air){
     let reach;
     if(chargeDist)reach=chargeDist;
-    else{const e=tanks[1-t.team];reach=e?Math.hypot(e.x-t.x,e.y-t.y):g.range;
+    else{const e=enemyOf(t);reach=e?Math.hypot(e.x-t.x,e.y-t.y):g.range;
       if(t.ai&&g.fuseErr)reach+=(Math.random()-.5)*g.fuseErr} // bots misjudge the drop
     life=Math.max(8,Math.min(g.life,Math.round((reach-mo)/g.spd)));
     life0=life;
@@ -145,6 +145,22 @@ function fire(t,chargeDist){
   burst(t.x+Math.cos(base)*mo,t.y+Math.sin(base)*mo,heavy?'#ff8c42':'#ffd166',heavy?8:4,heavy?3.5:2.5);
   if(heavy)sfx(240,70,.18,'square',.11);else sndFor(t.cls.gun)();
 }
+
+/* ---------------- sides: who is fighting whom ----------------
+   t.side 0 = the player team, 1 = the opposition. In 1v1 modes side===team,
+   in survival/boss every bot shares side 1 so they never shoot each other. */
+function enemyOf(t){
+  let best=null,bd=1e9;
+  for(const o of tanks){
+    if(o===t||o.hp<=0||o.side===t.side||o.dead)continue;
+    const d=(o.x-t.x)*(o.x-t.x)+(o.y-t.y)*(o.y-t.y);
+    if(d<bd){bd=d;best=o}
+  }
+  return best;
+}
+function alliesOf(side){return tanks.filter(o=>o.side===side&&o.hp>0&&!o.dead)}
+function players(){return tanks.filter(o=>o.side===0)}
+function humanTanks(){return tanks.filter(o=>o.human)}
 
 /* ---------------- AI ---------------- */
 function losClear(x1,y1,x2,y2){
@@ -215,10 +231,26 @@ function bfsStep(t,tx,ty){
   if(!best)return null;
   return{x:best[0]*T+T/2-t.x,y:best[1]*T+T/2-t.y};
 }
+function freeDir(t){
+  const r=t.cls.radius,step=Math.max(2,t.cls.speed);
+  const start=Math.random()*8|0;
+  for(let k=0;k<8;k++){
+    const a=((start+k)%8)/8*Math.PI*2,dx=Math.cos(a),dy=Math.sin(a);
+    const okx=dx&&!hitCell(t.x+dx*step,t.y,r,'tank',dx,0,false)&&!moverHit(t.x+dx*step,t.y,r);
+    const oky=dy&&!hitCell(t.x,t.y+dy*step,r,'tank',0,dy,false)&&!moverHit(t.x,t.y+dy*step,r);
+    if(okx||oky)return[okx?dx:0,oky?dy:0];
+  }
+  return[-1,0];
+}
 function aiInput(t){
-  const cfg=t.ai,e=tanks[1-t.team],g=GUNS[t.cls.gun];
+  const cfg=t.ai,e=enemyOf(t),g=GUNS[t.cls.gun];
   const inp={dx:0,dy:0,fire:false};
   if(!e)return inp;
+  // a tank handed an AI after spawning still needs its bookkeeping
+  if(t.aiPanic===undefined){
+    t.aiTick=0;t.aiPanic=0;t.aiPanicDir=[1,0];t.aiFireLock=0;t.aiPath=null;
+    t.aiLastX=t.x;t.aiLastY=t.y;t.aimNoise=0;
+  }
   t.aiTick++;
   const dx=e.x-t.x,dy=e.y-t.y,dist=Math.hypot(dx,dy)||1;
   const los=losClear(t.x,t.y,e.x,e.y);
@@ -274,11 +306,8 @@ function aiInput(t){
     const moved=Math.hypot(t.x-(t.aiLastX||0),t.y-(t.aiLastY||0));
     t.aiLastX=t.x;t.aiLastY=t.y;
     if(moved<6&&t.aiPanic<=0){
-      t.aiPanic=36;
-      const opts=[];
-      for(let i=0;i<8;i++){const a=i/8*Math.PI*2;
-        if(!dirBlocked(t,Math.cos(a),Math.sin(a)))opts.push([Math.cos(a),Math.sin(a)])}
-      t.aiPanicDir=opts.length?opts[Math.random()*opts.length|0]:[-wx,-wy];
+      t.aiPanic=40;
+      t.aiPanicDir=freeDir(t);   // tested against real movement, not a fat probe
       t.aiPath=null;
     }
   }
@@ -365,6 +394,7 @@ function unwedge(t){
   }else t.wedge=0;
 }
 function controlTank(t){
+  if(t.dead||t.hp<=0)return;
   const fx=t.fx;
   unwedge(t);
   let inp=t.ai?aiInput(t):(t.remote?(t.netInput||{dx:0,dy:0,fire:false}):humanInput(t));
@@ -417,7 +447,7 @@ function controlTank(t){
   // aim assist: the turret tracks the enemy on its own when there is a shot,
   // and settles back to the direction of travel when there is not
   if(!t.ai){
-    const e2=tanks[1-t.team];
+    const e2=enemyOf(t);
     let want=t.ang,locked=false;
     if(e2&&e2.hp>0&&state==='play'){
       const g2=GUNS[t.cls.gun];
@@ -461,15 +491,19 @@ function controlTank(t){
   t.fireHeld=inp.fire;
 }
 function tankCollide(){
-  const [a,b]=tanks;
-  const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),min=a.cls.radius+b.cls.radius;
-  if(d>0&&d<min){
-    const push=(min-d)/2,ux=dx/d,uy=dy/d;
-    tryMove(a,-ux*push,-uy*push);
-    tryMove(b,ux*push,uy*push);
-    for(const [s,o] of [[a,b],[b,a]]){
-      if(s.fx.star>0&&o.fx.star<=0&&o.inv<=0&&s.starCd<=0){
-        s.starCd=30;damage(o,1,Math.atan2(o.y-s.y,o.x-s.x),12);
+  for(let i=0;i<tanks.length;i++)for(let j=i+1;j<tanks.length;j++){
+    const a=tanks[i],b=tanks[j];
+    if(a.hp<=0||b.hp<=0||a.dead||b.dead)continue;
+    const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),min=a.cls.radius+b.cls.radius;
+    if(d>0&&d<min){
+      const push=(min-d)/2,ux=dx/d,uy=dy/d;
+      const aw=a.mass||1,bw=b.mass||1,tot=aw+bw;
+      tryMove(a,-ux*push*(bw/tot)*2,-uy*push*(bw/tot)*2);
+      tryMove(b,ux*push*(aw/tot)*2,uy*push*(aw/tot)*2);
+      if(a.side!==b.side)for(const [s,o] of [[a,b],[b,a]]){
+        if(s.fx.star>0&&o.fx.star<=0&&o.inv<=0&&s.starCd<=0){
+          s.starCd=30;damage(o,1,Math.atan2(o.y-s.y,o.x-s.x),12);
+        }
       }
     }
   }
@@ -487,7 +521,7 @@ function tankCollide(){
 }
 
 /* ---------------- damage ---------------- */
-function damage(t,dmg,fromAng,knock){
+function damage(t,dmg,fromAng,knock,src){
   if(t.fx.star>0)return;
   if(t.shield>0){t.shield--;burst(t.x,t.y,'#3d7ea6',10,3);sBounce();addFloat(t.x,t.y-24,'BLOCKED','#3d7ea6');return}
   if(t.cls.trait==='brace')knock*=.3;
@@ -497,20 +531,13 @@ function damage(t,dmg,fromAng,knock){
   burst(t.x,t.y,t.cls.color,10,3.5);burst(t.x,t.y,'#fff',5,4);
   addFloat(t.x,t.y-t.cls.radius-10,'-'+dmg,'#ffd166');
   tryMove(t,Math.cos(fromAng)*knock,0);tryMove(t,0,Math.sin(fromAng)*knock);
-  if(t.hp<=0){
-    roundWinner=tanks[1-t.team];roundWinner.score++;
-    bumpStat(roundWinner.team,'kos');bumpStat(0,'rounds');bumpStat(1,'rounds');
-    ko={x:t.x,y:t.y};
-    burst(t.x,t.y,t.cls.color,26,6);burst(t.x,t.y,'#ffd166',18,5);
-    ring(t.x,t.y,'#fff',9,7);ring(t.x,t.y,t.cls.color,6,5);ring(t.x,t.y,'#ffd166',12,4);
-    shake=14;hitstop=8;sKO();jWin();state='round';timer=140;
-  }
+  if(t.hp<=0)onDeath(t,src);
 }
 function explode(x,y,radius,dmg,owner){
   burst(x,y,'#ffd166',20,5);burst(x,y,'#ff8c42',14,4);ring(x,y,'#ffd166',8,6);ring(x,y,'#fff',5,3);shake=Math.max(shake,8);sBoom();
   for(const t of tanks){
     if(t===owner||t.inv>0)continue;
-    if(Math.hypot(t.x-x,t.y-y)<radius+t.cls.radius)damage(t,dmg,Math.atan2(t.y-y,t.x-x),12);
+    if(Math.hypot(t.x-x,t.y-y)<radius+t.cls.radius)damage(t,dmg,Math.atan2(t.y-y,t.x-x),12,owner);
     if(state!=='play')return;
   }
   for(const k in crateHp){
@@ -539,13 +566,13 @@ function spawnPickup(){
   }
 }
 function applyPower(t,def){
-  const e=tanks[1-t.team];
+  const e=enemyOf(t);
   sPick();addFloat(t.x,t.y-28,def.label,def.color);
   if(def.id==='heal')t.hp=Math.min(t.maxHp,t.hp+2);
   else if(def.id==='shield')t.shield=2;
   else if(def.id==='mine')t.minesToLay=3;
-  else if(def.id==='freeze'){e.fx.frozen=90;sFrz();burst(e.x,e.y,'#4c93d9',14,4);addFloat(e.x,e.y-28,'FROZEN!','#4c93d9')}
-  else if(def.id==='flip'){e.fx.reverse=360;addFloat(e.x,e.y-28,'FLIPPED!','#ff8c42')}
+  else if(def.id==='freeze'){if(e){e.fx.frozen=90;sFrz();burst(e.x,e.y,'#4c93d9',14,4);addFloat(e.x,e.y-28,'FROZEN!','#4c93d9')}}
+  else if(def.id==='flip'){if(e){e.fx.reverse=360;addFloat(e.x,e.y-28,'FLIPPED!','#ff8c42')}}
   else t.fx[def.id]=def.dur;
 }
 
@@ -555,7 +582,8 @@ function stepPlay(){
   tankCollide();
   if(state!=='play')return;
   // round clock: at zero the healthier tank takes it, level HP goes to sudden death
-  if(!sudden){
+  if(!isRounds()){/* survival/ball/zone/boss keep their own pacing */}
+  else if(!sudden){
     roundClock--;
     if(roundClock===HURRY)addFloat(W/2,H/2-60,'HURRY UP!','#ef3e4a');
     if(roundClock<=0){
@@ -565,7 +593,7 @@ function stepPlay(){
         addFloat(W/2,H/2-60,'SUDDEN DEATH!','#ffd166')}
       return;
     }
-  }else{
+  }else if(isRounds()){
     // sudden death has its own 20s: if still level, the round goes to a coin flip
     roundClock--;
     if(roundClock<=0){damage(tanks[Math.random()<.5?0:1],99,0,0);return}
@@ -599,8 +627,8 @@ function stepPlay(){
     if(mn.arm>0)mn.arm--;
     if(--mn.life<=0){mines.splice(i,1);continue}
     if(mn.arm<=0){
-      const e=tanks[1-mn.owner.team];
-      if(e.inv<=0&&Math.hypot(e.x-mn.x,e.y-mn.y)<e.cls.radius+9){
+      const e=enemyOf(mn.owner);
+      if(e&&e.inv<=0&&Math.hypot(e.x-mn.x,e.y-mn.y)<e.cls.radius+9){
         mines.splice(i,1);explode(mn.x,mn.y,30,1,mn.owner);
         if(state!=='play')return;
       }
@@ -663,7 +691,7 @@ function stepPlay(){
         // LONGSHOT perk: the round gathers pace over distance
         if(GUNS[b.gun].falloff){const fl=Math.hypot(b.x-b.ox,b.y-b.oy);d2=fl<160?1:fl<340?2:3;
           if(d2===3)addFloat(t.x,t.y-30,'LONG SHOT!','#35a44a')}
-        damage(t,d2,Math.atan2(b.vy,b.vx),b.knock!=null?b.knock:GUNS[b.gun].knock);
+        damage(t,d2,Math.atan2(b.vy,b.vx),b.knock!=null?b.knock:GUNS[b.gun].knock,b.owner);
         break;
       }
     }

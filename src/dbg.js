@@ -1,0 +1,13 @@
+const { boot } = require('./harness');
+const G = boot();
+G.mode='survival'; G.setCoop(false); G.sel[0].i=1; G.setupMode();
+const p=G.tanks[0], e=G.tanks[1];
+p.ai={name:'N',react:5,aimErr:.1,aimTol:.25,dodge:.5,seek:true,lead:true,speedMul:1,fireGap:4}; p.human=false;
+for(let i=0;i<600;i++)G.step();
+console.log('after 600 ticks: state',G.state,'bullets',G.bullets.length);
+console.log('player', {x:p.x|0,y:p.y|0,hp:p.hp,side:p.side,cd:p.cd,dead:p.dead});
+console.log('enemy ', {x:e.x|0,y:e.y|0,hp:e.hp,side:e.side,cd:e.cd,dead:e.dead,ai:!!e.ai});
+console.log('dist', Math.hypot(p.x-e.x,p.y-e.y)|0);
+console.log('enemyOf(player) =', G.enemyOf ? (G.enemyOf(p)||{}).tag : 'n/a');
+const inp = G.aiInput(e);
+console.log('enemy ai input', inp);

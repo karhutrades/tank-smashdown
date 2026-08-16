@@ -117,7 +117,7 @@ const PKEY='tanksmash_profiles_v1';
 let profiles=[],slots=[0,1],store=true;
 function blankProfile(name){
   return{name:name||'PLAYER',color:SWATCHES[0],last:1,
-    stats:{wins:0,losses:0,kos:0,rounds:0,campaign:0,plays:{}}};
+    stats:{wins:0,losses:0,kos:0,rounds:0,campaign:0,bestWave:0,bestScore:0,goals:0,zones:0,bosses:0,plays:{}}};
 }
 function loadProfiles(){
   try{
@@ -129,6 +129,7 @@ function loadProfiles(){
     p.stats=p.stats||{};
     const s=p.stats;
     s.wins=s.wins|0;s.losses=s.losses|0;s.kos=s.kos|0;s.rounds=s.rounds|0;s.campaign=s.campaign|0;
+    s.bestWave=s.bestWave|0;s.bestScore=s.bestScore|0;s.goals=s.goals|0;s.zones=s.zones|0;s.bosses=s.bosses|0;
     s.plays=s.plays||{};
     if(typeof p.last!=='number')p.last=1;
     if(!p.color)p.color=SWATCHES[0];

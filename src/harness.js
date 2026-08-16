@@ -38,13 +38,18 @@ function boot(opts = {}) {
     get roundWinner(){return roundWinner}, get tanks(){return tanks}, get bullets(){return bullets},
     get profiles(){return profiles}, get slots(){return slots}, get sel(){return sel},
     get MAPS(){return MAPS}, get CLASSES(){return CLASSES}, get GUNS(){return GUNS},
+    get MODES(){return MODES}, gotoMode:id=>{menuIdx=MODES.findIndex(m=>m.id===id)},
     get NET(){return typeof NET!=='undefined'?NET:null},
+    get ball(){return ball}, get zone(){return zone}, get wave(){return wave}, get lives(){return lives},
+    get score(){return score}, get goals(){return goals}, get caps(){return caps},
+    setGoals:(a,b)=>{goals[0]=a;goals[1]=b}, setCaps:(a,b)=>{caps[0]=a;caps[1]=b},
+    setCoop:v=>{coopPlayers=v}, setupMode:()=>setupMode(), kindOf:()=>kindOf(),
     setAi:l=>{aiLevel=l}, startMatch:()=>startMatch(), startRound:()=>startRound(),
     damage:(t,d)=>damage(t,d,0,0), isUnlocked:(i,p)=>isUnlocked(i,p),
     get toast(){return toast}, aim:(t,a)=>{t.ang=a},
     connect:(r,c)=>netConnect(r,c), setRelay:u=>{NET.relay=u},
     netKey:e=>{if(typeof netKey==='function')netKey(e)},
-    get cells(){return cells}, aiInput:t=>aiInput(t), dirBlocked:(t,x,y)=>dirBlocked(t,x,y), T:40
+    get cells(){return cells}, enemyOf:t=>enemyOf(t), aiInput:t=>aiInput(t), dirBlocked:(t,x,y)=>dirBlocked(t,x,y), T:40
   };`;
   (0, eval)(js + '\n' + BRIDGE);
   const G = globalThis.__t;

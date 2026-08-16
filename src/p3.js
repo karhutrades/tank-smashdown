@@ -5,6 +5,10 @@ let state='title',timer=0,mapIndex=0,roundWinner=null;
 let cells=null,crateHp=null,movers=[],portals={},readyPinged=false,goPinged=false;
 let ko={x:480,y:300},pickupClock=0,flash=0,campCls=1;
 const ROUND_TIME=99*60,HURRY=15*60;let roundClock=ROUND_TIME,sudden=false;
+/* mode state: survival waves, ball, capture zone, boss, announcements */
+const BALL_TARGET=3,GOAL_D=104,GOAL_H=150;
+let score=0,wave=1,waveTimer=0,goals=[0,0],caps=[0,0],zone=null,ball=null;
+let ballReset=0,ballClock=2400,runClock=0,bossRound=0,ann=null,coopPlayers=false,lives=3;
 const sel=[{i:1,locked:false},{i:3,locked:false}];let selTimer=0;
 /* modes: 'duel' (solo vs bot) 'campaign' 'coop' 'online' */
 let mode='coop',aiLevel=1,humans=[true,true],campStage=0,campResult='';
@@ -313,6 +317,12 @@ function drawDecal(c,kind,x,y,rnd){
   }else if(kind==='embers'){
     if(rnd()<.5){c.fillStyle='rgba(255,140,66,.55)';c.beginPath();c.arc(x,y,2.6,0,Math.PI*2);c.fill()}
     else{c.strokeStyle='#4a495a';c.lineWidth=1.8;c.beginPath();c.moveTo(x-4,y-2);c.lineTo(x,y+1);c.lineTo(x+4,y-1);c.stroke()}
+  }else if(kind==='turf'){
+    c.strokeStyle='rgba(255,255,255,.10)';c.lineWidth=2;
+    c.beginPath();c.moveTo(x-5,y);c.lineTo(x+5,y);c.stroke();
+  }else if(kind==='turf'){
+    c.strokeStyle='rgba(255,255,255,.10)';c.lineWidth=2;
+    c.beginPath();c.moveTo(x-5,y);c.lineTo(x+5,y);c.stroke();
   }else if(kind==='bolts'){
     c.fillStyle='rgba(255,255,255,.14)';c.beginPath();c.arc(x,y,2.4,0,Math.PI*2);c.fill();
     c.strokeStyle='rgba(0,0,0,.25)';c.lineWidth=1.4;c.beginPath();c.arc(x,y,2.4,0,Math.PI*2);c.stroke();
