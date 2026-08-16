@@ -1,6 +1,7 @@
 /* ---------------- tank drawing ---------------- */
 function drawTankBody(o){
   const c=o.cls,r=c.radius,rec=Math.max(0,o.recoil||0),fx=o.fx;
+  const ta=(o.tang==null?o.ang:o.tang);
   const ghost=fx&&fx.ghost>0;
   if(ghost)cx.globalAlpha=.45;
   // ground shadow
@@ -31,6 +32,10 @@ function drawTankBody(o){
   cx.fillStyle='rgba(255,255,255,.28)';rr(cx,-r*.82,-r*.62,r*1.64,r*.44,r*.2);cx.fill();
   cx.fillStyle='rgba(20,22,40,.16)';rr(cx,-r*.82,r*.2,r*1.64,r*.36,r*.16);cx.fill();
   cx.fillStyle=c.dark;rr(cx,-r-4,-4.5,6,9,2.5);cx.fill();cx.stroke(); // exhaust
+  cx.restore();
+  // barrel + muzzle flash follow the turret so shots go where the pilot looks
+  cx.save();cx.translate(o.x,o.y);cx.scale(1+sq*.22,1-sq*.22);cx.rotate(ta);
+  cx.lineWidth=3.4;cx.strokeStyle=INK;cx.lineJoin='round';
   // barrel per class
   cx.fillStyle=c.dark;
   if(c.skin==='scout'){

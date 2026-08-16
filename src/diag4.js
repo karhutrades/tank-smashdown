@@ -9,7 +9,7 @@ for (let mi = 0; mi < G.MAPS.length; mi++) {
     G.tanks[1].cls = G.CLASSES[ci];
     G.tanks[1].maxHp = G.CLASSES[ci].hp; G.tanks[1].hp = G.CLASSES[ci].hp;
     let i = 0, ok = 0;
-    for (; i < 7000; i++) { G.step(); if (G.state !== 'play' && G.state !== 'ready') { ok = 1; break } }
+    for (; i < 9000; i++) { G.step(); if (G.state !== 'play' && G.state !== 'ready') { ok = 1; break } }
     row.push(ok ? String(i).padStart(5) : ' FAIL');
     if (!ok) bad.push(G.MAPS[mi].name + ' vs ' + G.CLASSES[ci].name);
   }

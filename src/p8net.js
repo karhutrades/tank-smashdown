@@ -16,7 +16,7 @@ let autoRoom='';
 try{
   const qs=new URLSearchParams(location.search);
   const q=qs.get('relay');
-  autoRoom=(qs.get('room')||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);
+  autoRoom=(qs.get('room')||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
   NET.relay=q||localStorage.getItem(RKEY)||'';
   if(q)localStorage.setItem(RKEY,q);
 }catch(e){}
@@ -96,7 +96,7 @@ if(autoRoom){
   setTimeout(()=>{audioOn();netConnect('auto',autoRoom)},350);
 }
 /* ---- lobby screen ---- */
-const CODE_CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const CODE_CHARS='0123456789';
 function randomCode(){let s='';for(let i=0;i<4;i++)s+=CODE_CHARS[Math.random()*CODE_CHARS.length|0];return s}
 function roomLink(code){
   const base=location.origin+location.pathname;
@@ -115,9 +115,18 @@ function copyLink(){
 function quickMatch(){NET.qslot=0;NET.code='PLAY';NET.quick=true;netConnect('auto','PLAY');sLock()}
 function privateRoom(){NET.code=randomCode();NET.quick=false;netConnect('host',NET.code);sLock()}
 function joinTyped(){
-  const c=typeBuf.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);
-  if(c.length<4){toast={txt:'TYPE ALL 4 LETTERS',life:160};sBack();return}
+  const c=typeBuf.replace(/[^0-9]/g,'').slice(0,4);
+  if(c.length<4){toast={txt:'TYPE ALL 4 DIGITS',life:160};sBack();return}
   NET.code=c;NET.quick=false;typeBuf='';netConnect('auto',c);sLock();
+}
+function netKey(e){
+  if(NET.editing){
+    if(e.key&&e.key.length===1&&/[a-zA-Z0-9 _.:\/-]/.test(e.key)&&typeBuf.length<64)typeBuf+=e.key.toLowerCase();
+    if(e.code==='Backspace')typeBuf=typeBuf.slice(0,-1);
+    return;
+  }
+  if(/^[0-9]$/.test(e.key)&&typeBuf.length<4)typeBuf+=e.key;
+  if(e.code==='Backspace')typeBuf=typeBuf.slice(0,-1);
 }
 stepOnline=function(){
   if(NET.editing){
@@ -173,7 +182,7 @@ drawOnline=function(){
   // main lobby: three big choices
   const cards=[
     {k:'SPACE',t:'QUICK MATCH',s:'play whoever is waiting',c:'#35a44a'},
-    {k:'TYPE',t:typeBuf?typeBuf+((frame>>4)%2?'_':''):'JOIN A CODE',s:typeBuf?'ENTER to join':'just type the 4 letters',c:'#ffd23f'},
+    {k:'0-9',t:typeBuf?typeBuf+((frame>>4)%2?'_':''):'JOIN A CODE',s:typeBuf?'ENTER to join':'just type the 4 digits',c:'#ffd23f'},
     {k:'H',t:'PRIVATE ROOM',s:'get a code + link to share',c:'#ef3e4a'},
   ];
   cards.forEach((cd,i)=>{
@@ -199,7 +208,7 @@ drawOnline=function(){
     label(roomLink(NET.code).replace(/^https?:\/\//,'').slice(0,34),W/2+150,356,12,INK);
     label('PRESS L TO COPY IT',W/2+150,382,12,'#3d7ea6');
   }else{
-    label('Two players, two browsers, one code. Or press SPACE and get matched.',W/2,340,14,INK);
+    label('SPACE plays whoever is waiting. Or host a room and read out 4 digits.',W/2,340,14,INK);
     label(NET.status==='FAILED'?('problem: '+NET.msg):('relay: '+NET.relay.replace(/^wss?:\/\//,'')),
       W/2,372,12,NET.status==='FAILED'?'#ef3e4a':'#8a8672');
   }
@@ -249,12 +258,12 @@ function netSnapshot(){
   const dead=[];
   for(const k in crateHp)if(crateHp[k]<=0)dead.push(+k);
   return{t:'snap',f:frame,st:state,tm:timer,mi:mapIndex,
-    tk:tanks.map(t=>({x:Math.round(t.x*4)/4,y:Math.round(t.y*4)/4,a:Math.round(t.ang*100)/100,
+    tk:tanks.map(t=>({x:Math.round(t.x*4)/4,y:Math.round(t.y*4)/4,a:Math.round(t.ang*100)/100,ta:Math.round((t.tang==null?t.ang:t.tang)*100)/100,ru:t.roul?t.roul.idx:-1,
       hp:t.hp,iv:t.inv,sh:t.shield,rc:Math.round(t.recoil),ds:Math.round(t.dist),sc:t.score,
       fz:t.fx.frozen,rv:t.fx.reverse,st:t.fx.star,gh:t.fx.ghost})),
     bl:bullets.map(b=>({x:Math.round(b.x),y:Math.round(b.y),r:b.r,g:b.gun,
       ai:b.air?1:0,li:b.life,l0:b.life0,ph:b.phase?1:0,px:Math.round(b.px),py:Math.round(b.py)})),
-    pu:pickups.map(p=>({x:p.x,y:p.y,i:POWERS.indexOf(p.def)})),
+    pu:pickups.map(p=>({x:p.x,y:p.y})),
     mn:mines.map(m=>({x:Math.round(m.x),y:Math.round(m.y),a:m.arm})),
     cr:dead,rw:roundWinner?roundWinner.team:-1};
 }
@@ -263,13 +272,14 @@ function netApplySnap(m){
   frame=m.f;state=m.st;timer=m.tm;
   m.tk.forEach((s,i)=>{
     const t=tanks[i];if(!t)return;
-    t.x=s.x;t.y=s.y;t.ang=s.a;t.hp=s.hp;t.inv=s.iv;t.shield=s.sh;
+    t.x=s.x;t.y=s.y;t.ang=s.a;t.tang=s.ta;t.hp=s.hp;t.inv=s.iv;t.shield=s.sh;
+    t.roul=s.ru>=0?{n:99,idx:s.ru}:null;
     t.recoil=s.rc;t.dist=s.ds;t.score=s.sc;
     t.fx.frozen=s.fz;t.fx.reverse=s.rv;t.fx.star=s.st;t.fx.ghost=s.gh;
   });
   bullets=m.bl.map(b=>({x:b.x,y:b.y,px:b.px,py:b.py,r:b.r,gun:b.g,air:!!b.ai,
     life:b.li,life0:b.l0,phase:!!b.ph,vx:0,vy:0,dmg:1,bounces:0}));
-  pickups=m.pu.map(p=>({x:p.x,y:p.y,def:POWERS[p.i]||POWERS[0],age:0}));
+  pickups=m.pu.map(p=>({x:p.x,y:p.y,age:0}));
   mines=m.mn.map(x=>({x:x.x,y:x.y,arm:x.a,life:900,owner:tanks[0]}));
   for(const k of m.cr){if(crateHp[k]>0){crateHp[k]=0;const gx=k%COLS,gy=(k/COLS)|0;cells[gy][gx]='.'}}
   roundWinner=m.rw>=0?tanks[m.rw]:roundWinner;
@@ -300,7 +310,7 @@ step=function(){
         NET.lastSent=sig;NET.sentAt=frame;
         netSend({t:'in',dx:inp.dx,dy:inp.dy,f:inp.fire});
       }
-      if(inp.dx||inp.dy)t.ang=lerpAngle(t.ang,Math.atan2(inp.dy,inp.dx),.3);
+      if(inp.dx||inp.dy)t.ang=lerpAngle(t.ang,Math.atan2(inp.dy,inp.dx),.3); // hull only; turret comes from the host
     }
     if(state==='game'&&navOk()){netSend({t:'again'});}
     pressQ.clear();

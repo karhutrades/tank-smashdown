@@ -136,51 +136,112 @@ const sTele=()=>sfx(300,900,.2,'sine',.1), sBoom=()=>sfx(120,35,.4,'sawtooth',.1
 const sFrz=()=>sfx(900,200,.3,'sine',.1), sMine=()=>sfx(700,700,.05,'square',.07);
 const sBack=()=>sfx(300,200,.1,'square',.07), sUnlock=()=>sfx(520,1040,.35,'triangle',.14);
 
-/* ---------------- music: a tiny chiptune sequencer ----------------
-   One bass + one lead voice, a different tune per world, so every arena
-   sounds like its own place without shipping any audio files. */
-const TUNES={
-  menu:    {bpm:104,wave:'triangle',lead:[0,4,7,12,11,7,4,2, 0,4,7,12,14,12,7,4],bass:[0,0,7,7,5,5,7,7]},
-  meadow:  {bpm:120,wave:'square',  lead:[0,4,7,9,7,4,2,4, 5,4,2,0,2,4,7,4],   bass:[0,0,5,5,7,7,5,5]},
-  desert:  {bpm:108,wave:'square',  lead:[0,3,5,3,7,5,3,0, 10,7,5,3,5,3,0,-2], bass:[0,0,3,3,5,5,3,3]},
-  frost:   {bpm:96, wave:'triangle',lead:[0,7,12,7,9,12,16,12, 14,12,9,7,9,7,5,7],bass:[0,0,4,4,7,7,4,4]},
-  volcano: {bpm:132,wave:'sawtooth',lead:[0,1,5,7,8,7,5,1, 0,1,5,8,10,8,5,1],  bass:[0,0,0,3,5,5,3,3]},
-  factory: {bpm:126,wave:'square',  lead:[0,5,7,10,7,5,3,5, 12,10,7,5,7,5,3,0],bass:[0,7,0,7,5,10,5,10]},
+/* ---------------- music: chiptune tracker v2 ----------------
+   16th-note sequencer, two hand-written sections per world, bass, drums,
+   and playback variation (A A B A form, octave lift on the 4th pass,
+   harmony on B, a drum fill into each new pass) so nothing loops in your
+   ear. All synthesized live - no audio files. */
+const __=null;
+const SONGS={
+ menu:{bpm:112,wave:'square',root:50,
+  A:[0,__,4,__,7,__,12,__,11,__,9,__,7,__,4,__,5,__,7,__,9,__,7,__,4,__,2,__,0,__,__,__],
+  B:[12,__,__,11,__,__,9,__,7,__,9,__,11,__,12,__,14,__,__,12,__,__,11,__,9,__,7,__,4,__,2,__],
+  bassA:[0,0,7,7,9,9,5,5],bassB:[5,5,4,4,2,2,0,0],drums:'k.h.s.h.k.h.s.hh'},
+ meadow:{bpm:122,wave:'square',root:48,
+  A:[0,__,7,__,4,__,7,__,9,__,7,__,5,4,2,__,4,__,7,__,12,__,9,__,7,__,5,__,4,2,0,__],
+  B:[12,__,11,__,9,__,12,__,14,__,12,__,11,9,7,__,9,__,7,__,5,__,4,__,5,__,7,__,2,__,4,__],
+  bassA:[0,0,5,5,7,7,5,5],bassB:[9,9,7,7,5,5,0,0],drums:'k.h.s.h.k.hhs.h.'},
+ desert:{bpm:104,wave:'square',root:45,
+  A:[0,__,__,3,__,__,5,__,7,__,8,__,7,5,3,__,0,__,__,3,__,__,5,__,10,__,8,__,7,__,5,__],
+  B:[12,__,__,10,__,__,8,__,7,__,8,__,10,__,12,__,15,__,12,__,10,__,8,__,7,__,5,__,3,__,0,__],
+  bassA:[0,0,0,0,3,3,5,5],bassB:[0,0,5,5,3,3,0,0],drums:'k..hs..hk.h.s..h'},
+ frost:{bpm:92,wave:'triangle',root:52,
+  A:[0,__,__,__,7,__,__,__,12,__,__,11,__,__,9,__,7,__,__,__,9,__,__,__,11,__,__,7,__,__,4,__],
+  B:[14,__,__,__,12,__,__,__,9,__,__,11,__,__,12,__,7,__,__,__,4,__,__,__,5,__,__,2,__,__,0,__],
+  bassA:[0,0,4,4,7,7,4,4],bassB:[5,5,7,7,4,4,0,0],drums:'..h...h...h...h.'},
+ volcano:{bpm:138,wave:'sawtooth',root:43,
+  A:[0,0,__,1,__,5,__,1,0,0,__,7,__,5,__,1,0,0,__,1,__,5,__,8,7,__,5,__,1,__,0,__],
+  B:[12,__,8,__,7,__,8,__,12,13,12,__,8,__,7,__,5,__,7,__,8,__,10,__,12,__,8,__,7,__,5,__],
+  bassA:[0,0,0,0,1,1,3,3],bassB:[5,5,3,3,1,1,0,0],drums:'kkh.s.h.kkh.s.hh'},
+ factory:{bpm:126,wave:'square',root:47,
+  A:[0,__,10,__,7,__,5,__,0,__,10,__,7,10,12,__,0,__,10,__,7,__,5,__,3,__,5,__,7,__,10,__],
+  B:[12,__,__,10,12,__,__,10,7,__,5,__,7,__,10,__,12,__,__,15,__,__,12,__,10,__,7,__,5,__,3,__],
+  bassA:[0,7,0,7,5,10,5,10],bassB:[3,10,3,10,0,7,0,7],drums:'k.hhs.h.k.hhs.hk'},
 };
-let musicOn=true,musicGain=null,musicTimer=null,musicStep=0,musicTune=null,musicRoot=48;
-function noteHz(semi){return 440*Math.pow(2,(semi-9)/12)}
+let musicOn=true,musicGain=null,musicTimer=null,musicTune=null,seqPos=0,noiseBuf=null;
+function noteHz(m){return 440*Math.pow(2,(m-69)/12)}
+function noiseBuffer(){
+  if(!noiseBuf){noiseBuf=AC.createBuffer(1,AC.sampleRate*.3|0,AC.sampleRate);
+    const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
+  return noiseBuf;
+}
 function playMusic(key){
-  const tune=TUNES[key]||TUNES.menu;
+  const tune=SONGS[key]||SONGS.menu;
   if(musicTune===tune&&musicTimer)return;
-  musicTune=tune;
-  stopMusic();
+  musicTune=tune;stopMusic();
   if(!AC||!musicOn)return;
-  musicGain=AC.createGain();musicGain.gain.value=.055;musicGain.connect(AC.destination);
-  musicStep=0;
-  const beat=60/tune.bpm/2;
+  musicGain=AC.createGain();musicGain.gain.value=.062;musicGain.connect(AC.destination);
+  seqPos=0;
+  const stepMs=60/tune.bpm/4*1000;
   musicTimer=setInterval(()=>{
     if(!AC||!musicGain)return;
-    const t0=AC.currentTime,i=musicStep%tune.lead.length;
-    const voice=(semi,wave,dur,vol,detune)=>{
-      const o=AC.createOscillator(),g=AC.createGain();
-      o.type=wave;o.frequency.value=noteHz(semi)+(detune||0);
-      g.gain.setValueAtTime(0,t0);
-      g.gain.linearRampToValueAtTime(vol,t0+.012);
-      g.gain.exponentialRampToValueAtTime(.0006,t0+dur);
-      o.connect(g);g.connect(musicGain);o.start(t0);o.stop(t0+dur+.02);
-    };
-    voice(musicRoot+12+tune.lead[i],tune.wave,beat*.9,.5);
-    if(musicStep%2===0)voice(musicRoot-12+tune.bass[(musicStep/2)%tune.bass.length],'triangle',beat*1.6,.75);
-    musicStep++;
-  },beat*1000);
+    const i=seqPos%32,section=((seqPos/32)|0)%4; // A A B A(octave up)
+    const t0=AC.currentTime+.02+((i%2)?stepMs*.00012:0),dur=stepMs/1000;
+    const V=(semi,wave,d,vol)=>{const o=AC.createOscillator(),g=AC.createGain();
+      o.type=wave;o.frequency.value=noteHz(semi);
+      g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(vol,t0+.012);
+      g.gain.exponentialRampToValueAtTime(.0006,t0+d);
+      o.connect(g);g.connect(musicGain);o.start(t0);o.stop(t0+d+.03)};
+    const N=(d,vol,rate)=>{const sr=AC.createBufferSource(),g=AC.createGain();
+      sr.buffer=noiseBuffer();sr.playbackRate.value=rate;
+      g.gain.setValueAtTime(vol,t0);g.gain.exponentialRampToValueAtTime(.0008,t0+d);
+      sr.connect(g);g.connect(musicGain);sr.start(t0);sr.stop(t0+d)};
+    const sec=section===2?tune.B:tune.A,n=sec[i];
+    if(n!==__&&n!==undefined){
+      V(tune.root+24+n+(section===3?12:0),tune.wave,dur*3.2,.5);
+      if(section===2)V(tune.root+24+n+7,'triangle',dur*2.6,.2);
+    }
+    if(i%4===0)V(tune.root+(section===2?tune.bassB:tune.bassA)[(i/4)|0],'triangle',dur*5,.8);
+    const ch=tune.drums[i%16];
+    if(ch==='k'){const o=AC.createOscillator(),g=AC.createGain();
+      o.type='sine';o.frequency.setValueAtTime(120,t0);o.frequency.exponentialRampToValueAtTime(42,t0+.1);
+      g.gain.setValueAtTime(.5,t0);g.gain.exponentialRampToValueAtTime(.001,t0+.12);
+      o.connect(g);g.connect(musicGain);o.start(t0);o.stop(t0+.13)}
+    else if(ch==='s')N(.08,.16,1);
+    else if(ch==='h')N(.03,.07,2.4);
+    if(section===3&&i>=28)N(.05,.12,1.4); // fill into the next pass
+    seqPos++;
+  },stepMs);
 }
 function stopMusic(){
   if(musicTimer){clearInterval(musicTimer);musicTimer=null}
   if(musicGain){try{musicGain.disconnect()}catch(e){}musicGain=null}
 }
 function toggleMusic(){musicOn=!musicOn;if(!musicOn)stopMusic();else{musicTune=null;playMusic(currentTune())}}
+/* jingles + countdown blips */
+function jingle(midis,gap,wave,vol){
+  if(muted||!AC)return;
+  const t0=AC.currentTime;
+  midis.forEach((m,i)=>{const o=AC.createOscillator(),g=AC.createGain();
+    o.type=wave;o.frequency.value=noteHz(m);
+    const ts=t0+i*gap;g.gain.setValueAtTime(0,ts);g.gain.linearRampToValueAtTime(vol,ts+.015);
+    g.gain.exponentialRampToValueAtTime(.001,ts+gap*1.9);
+    o.connect(g);g.connect(AC.destination);o.start(ts);o.stop(ts+gap*2)});
+}
+const jWin=()=>jingle([72,76,79,84],.11,'square',.12);
+const jGame=()=>jingle([72,76,79,84,88,84,91],.12,'square',.13);
+const sCd=()=>sfx(440,440,.09,'square',.13);
+const sCdGo=()=>sfx(880,880,.3,'square',.15);
 
-/* ---------------- input ---------------- */
+/* ---------------- input ---------------- *//* ---------------- input ---------------- */
+function toggleFullscreen(){
+  try{
+    const el=(document.querySelector&&document.querySelector('.wrap'))||cv;
+    if(document.fullscreenElement)document.exitFullscreen();
+    else if(el.requestFullscreen)el.requestFullscreen();
+  }catch(e){}
+}
+if(cv.addEventListener)cv.addEventListener('dblclick',toggleFullscreen);
 const keys={},pressQ=new Set();
 let typeBuf='';
 addEventListener('keydown',e=>{
@@ -188,10 +249,13 @@ addEventListener('keydown',e=>{
   if(['Space','Enter','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
   if(e.code==='KeyM'&&!e.repeat&&state!=='name'&&state!=='online')muted=!muted;
   if(e.code==='KeyN'&&!e.repeat&&state!=='name'&&state!=='online')toggleMusic();
-  if(state==='name'||state==='online'){
-    if(e.key&&e.key.length===1&&/[A-Za-z0-9 _.:\/-]/.test(e.key)&&typeBuf.length<64)typeBuf+=e.key.toUpperCase();
+  if(state==='name'){
+    if(e.key&&e.key.length===1&&/[A-Za-z0-9 _-]/.test(e.key)&&typeBuf.length<12)typeBuf+=e.key.toUpperCase();
     if(e.code==='Backspace')typeBuf=typeBuf.slice(0,-1);
+  }else if(state==='online'&&typeof netKey==='function'){
+    netKey(e); // the lobby decides what counts as typing (digits for codes, URLs when editing)
   }
+  if(e.code==='KeyF'&&!e.repeat&&state!=='name')toggleFullscreen();
   if(!e.repeat)pressQ.add(e.code);
   keys[e.code]=true;
 });

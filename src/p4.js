@@ -26,11 +26,11 @@ function startRound(){
   shake=0;hitstop=0;pickupClock=200;readyPinged=false;goPinged=false;
   initAmbient(m);
   tanks.forEach((t,i)=>{const s=m.spawns[i];
-    t.x=s[0]*T+T/2;t.y=s[1]*T+T/2;t.ang=s[2];t.hp=t.maxHp;
+    t.x=s[0]*T+T/2;t.y=s[1]*T+T/2;t.ang=s[2];t.tang=s[2];t.hp=t.maxHp;
     t.cd=0;t.inv=0;t.recoil=0;t.ivx=0;t.ivy=0;t.mvx=0;t.mvy=0;t.dist=0;
     t.tpCd=0;t.crushCd=0;t.starCd=0;t.shield=0;t.minesToLay=0;t.mineCd=0;
     t.fx={rapid:0,triple:0,big:0,pierce:0,star:0,speed:0,ghost:0,frozen:0,reverse:0};
-    t.wedge=0;
+    t.wedge=0;t.lock=0;t.roul=null;
     if(t.ai){t.aiTick=0;t.aiFireLock=0;t.aiPath=null;t.aiPanic=0;t.aiPanicDir=[1,0];t.aiLastX=t.x;t.aiLastY=t.y;t.aimNoise=0}
   });
   roundClock=ROUND_TIME;sudden=false;
@@ -40,7 +40,7 @@ function makeTank(team,clsIdx,human,aiCfg,hpBonus,colorOverride){
   const c=CLASSES[clsIdx];
   return{team,tag:TEAMS[team].tag,cls:c,clsIdx,human,ai:aiCfg||null,
     profColor:colorOverride||null,maxHp:c.hp+(hpBonus||0),
-    x:0,y:0,ang:0,hp:1,cd:0,inv:0,recoil:0,score:0,
+    x:0,y:0,ang:0,tang:0,hp:1,cd:0,inv:0,recoil:0,score:0,lock:0,roul:null,
     name:human?(prof(team).name):(aiCfg?('CPU · '+aiCfg.name):'CPU')};
 }
 function startMatch(){
@@ -113,6 +113,7 @@ function fire(t){
   if(fx.triple>0){n=Math.max(3,n);spread=Math.max(.22,spread)}
   const dmg=g.dmg+(fx.big>0?1:0),br=g.br+(fx.big>0?3:0);
   const mo=t.cls.radius+t.cls.bl-4;
+  const base=(t.tang==null?t.ang:t.tang);
   // a lobbed shell fuses for the distance to the enemy, so it lands on them
   // instead of always dropping at maximum range
   let life=g.life||0,life0=g.life||0;
@@ -123,14 +124,14 @@ function fire(t){
     life0=life;
   }
   for(let i=0;i<n;i++){
-    const a=t.ang+(spread?(i-(n-1)/2)*spread:0)+(g.jitter?(Math.random()-.5)*g.jitter:0);
+    const a=base+(spread?(i-(n-1)/2)*spread:0)+(g.jitter?(Math.random()-.5)*g.jitter:0);
     bullets.push({x:t.x+Math.cos(a)*mo,y:t.y+Math.sin(a)*mo,px:0,py:0,
       vx:Math.cos(a)*g.spd,vy:Math.sin(a)*g.spd,owner:t,dmg,r:br,
       bounces:g.bounces||0,life,life0,gun:t.cls.gun,
       pierce:fx.pierce>0,phase:!!g.phase,air:!!g.air,aoe:g.aoe||0,tpCd:0});
   }
   t.cd=Math.round(g.cd*(fx.rapid>0?.5:1));t.recoil=g.br;
-  burst(t.x+Math.cos(t.ang)*mo,t.y+Math.sin(t.ang)*mo,'#ffd166',4,2.5);
+  burst(t.x+Math.cos(base)*mo,t.y+Math.sin(base)*mo,'#ffd166',4,2.5);
   SND[t.cls.gun]();
 }
 
@@ -283,9 +284,9 @@ function aiInput(t){
     if(best){wx=best[0];wy=best[1]}
   }
   inp.dx=wx;inp.dy=wy;
-  // face + fire
-  t.ang=lerpAngle(t.ang,aim,cfg.react<=3?.28:.16);
-  let err=aim-t.ang;
+  // face + fire: the turret carries the aim, the hull follows movement
+  t.tang=lerpAngle(t.tang==null?t.ang:t.tang,aim,cfg.react<=3?.28:.16);
+  let err=aim-t.tang;
   while(err>Math.PI)err-=2*Math.PI;while(err<-Math.PI)err+=2*Math.PI;
   const canSee=g.air?dist<g.range:los;
   if(t.aiFireLock>0)t.aiFireLock--;
@@ -345,7 +346,7 @@ function controlTank(t){
   let ddx=0,ddy=0;
   if(dx||dy){
     const len=Math.hypot(dx,dy);ddx=dx/len*spd;ddy=dy/len*spd;
-    if(!t.ai)t.ang=lerpAngle(t.ang,Math.atan2(dy,dx),.3);
+    t.ang=lerpAngle(t.ang,Math.atan2(dy,dx),.3);
   }
   if(tile==='*'){t.mvx=t.mvx*.93+ddx*.1;t.mvy=t.mvy*.93+ddy*.1}
   else{t.mvx=ddx;t.mvy=ddy}
@@ -375,6 +376,30 @@ function controlTank(t){
     const other=pair.find(p=>p!==here);
     if(other){burst(t.x,t.y,'#7ae0c3',12,4);t.x=other.gx*T+T/2;t.y=other.gy*T+T/2;
       t.tpCd=70;burst(t.x,t.y,'#7ae0c3',12,4);sTele()}
+  }
+  // aim assist: the turret tracks the enemy on its own when there is a shot,
+  // and settles back to the direction of travel when there is not
+  if(!t.ai){
+    const e2=tanks[1-t.team];
+    let want=t.ang,locked=false;
+    if(e2&&e2.hp>0&&state==='play'){
+      const g2=GUNS[t.cls.gun];
+      const ddx=e2.x-t.x,ddy=e2.y-t.y,d2=Math.hypot(ddx,ddy)||1;
+      const through=!!(g2.phase||g2.air);
+      if(d2<g2.range*1.25&&(through||losClear(t.x,t.y,e2.x,e2.y))){
+        const tof=d2/g2.spd;
+        want=Math.atan2(ddy+(e2.mvy||0)*tof*.8,ddx+(e2.mvx||0)*tof*.8);
+        locked=true;
+      }
+    }
+    t.lock=locked?Math.min(30,(t.lock||0)+1):0;
+    t.tang=lerpAngle(t.tang==null?t.ang:t.tang,want,locked?.18:.12);
+  }
+  // item roulette spins above the tank, then lands on a power
+  if(t.roul){
+    t.roul.n--;
+    if(t.roul.n%6===0){t.roul.idx=(t.roul.idx+1)%POWERS.length;if(t.roul.n>12)sMine()}
+    if(t.roul.n<=0){applyPower(t,POWERS[Math.random()*POWERS.length|0]);t.roul=null}
   }
   if(t.cd>0)t.cd--;
   if(t.inv>0)t.inv--;
@@ -427,7 +452,7 @@ function damage(t,dmg,fromAng,knock){
     bumpStat(roundWinner.team,'kos');bumpStat(0,'rounds');bumpStat(1,'rounds');
     ko={x:t.x,y:t.y};
     burst(t.x,t.y,t.cls.color,26,6);burst(t.x,t.y,'#ffd166',18,5);
-    shake=14;hitstop=8;sKO();state='round';timer=140;
+    shake=14;hitstop=8;sKO();jWin();state='round';timer=140;
   }
 }
 function explode(x,y,radius,dmg,owner){
@@ -458,7 +483,7 @@ function spawnPickup(){
     const x=gx*T+T/2,y=gy*T+T/2;
     if(tanks.some(t=>Math.hypot(t.x-x,t.y-y)<150))continue;
     if(pickups.some(p=>Math.hypot(p.x-x,p.y-y)<120))continue;
-    pickups.push({x,y,def:POWERS[Math.random()*POWERS.length|0],age:0});
+    pickups.push({x,y,age:0});
     return;
   }
 }
@@ -485,10 +510,14 @@ function stepPlay(){
     if(roundClock<=0){
       const [a,b]=tanks;
       if(a.hp!==b.hp)damage(a.hp<b.hp?a:b,99,0,0);
-      else{sudden=true;a.hp=b.hp=1;a.inv=b.inv=40;shake=10;sStar();
+      else{sudden=true;roundClock=20*60;a.hp=b.hp=1;a.inv=b.inv=40;shake=10;sStar();
         addFloat(W/2,H/2-60,'SUDDEN DEATH!','#ffd166')}
       return;
     }
+  }else{
+    // sudden death has its own 20s: if still level, the round goes to a coin flip
+    roundClock--;
+    if(roundClock<=0){damage(tanks[Math.random()<.5?0:1],99,0,0);return}
   }
   pickupClock--;
   if(pickupClock<=0){pickupClock=300;if(pickups.length<2)spawnPickup()}
@@ -496,7 +525,11 @@ function stepPlay(){
     const p=pickups[i];p.age++;
     if(p.age>720){pickups.splice(i,1);continue}
     for(const t of tanks){
-      if(Math.hypot(t.x-p.x,t.y-p.y)<t.cls.radius+14){applyPower(t,p.def);pickups.splice(i,1);break}
+      if(t.roul)continue; // one spin at a time; the box stays for the other tank
+      if(Math.hypot(t.x-p.x,t.y-p.y)<t.cls.radius+14){
+        t.roul={n:66,idx:Math.random()*POWERS.length|0};
+        sPick();pickups.splice(i,1);break;
+      }
     }
   }
   for(let i=mines.length-1;i>=0;i--){

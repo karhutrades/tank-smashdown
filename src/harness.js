@@ -19,7 +19,7 @@ function boot(opts = {}) {
   global.localStorage = { _v: {}, getItem(k) { return this._v[k] || null }, setItem(k, v) { this._v[k] = v } };
   global.Image = function () { return { complete: false, naturalWidth: 0 } };
   global.location = { protocol: 'https:', hostname: opts.hostname || 'localhost', search: opts.search || '' };
-  global.URLSearchParams = global.URLSearchParams || class { get() { return null } };
+  // node has real URLSearchParams; make sure the game sees the search string
   if (!global.WebSocket) global.WebSocket = function () { return { readyState: 3, close() {} } };
   // the game's keep-alive timer would hold the node event loop open forever
   const realSetInterval = global.setInterval;
@@ -43,6 +43,7 @@ function boot(opts = {}) {
     damage:(t,d)=>damage(t,d,0,0), isUnlocked:(i,p)=>isUnlocked(i,p),
     get toast(){return toast}, aim:(t,a)=>{t.ang=a},
     connect:(r,c)=>netConnect(r,c), setRelay:u=>{NET.relay=u},
+    netKey:e=>{if(typeof netKey==='function')netKey(e)},
     get cells(){return cells}, aiInput:t=>aiInput(t), dirBlocked:(t,x,y)=>dirBlocked(t,x,y), T:40
   };`;
   (0, eval)(js + '\n' + BRIDGE);

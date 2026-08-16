@@ -100,7 +100,7 @@ function drawTitle(){
     splash('PRESS SPACE OR ENTER',26,540,0,'#ffd166');
     cx.restore();
   }
-  footer('P1: WASD + SPACE      P2: ARROWS + ENTER      M: SFX      N: MUSIC');
+  footer('P1: WASD + SPACE   ·   P2: ARROWS + ENTER   ·   AUTO-AIM ON   ·   F: FULLSCREEN   ·   N: MUSIC');
 }
 /* ---------------- mode select ---------------- */
 function drawMode(){
@@ -329,8 +329,14 @@ function drawGameplay(){
     const line=mode==='campaign'?('STAGE '+(campStage+1)+'/'+MAPS.length+'  ·  ONE KO WINS'):
       (m.world.toUpperCase()+' WORLD  ·  STAGE '+(mapIndex+1)+'/'+MAPS.length+'  ·  FIRST TO '+WIN_SCORE);
     label(line,bx-165,46,11,'#8a8672');
-    if(timer>40)splash('READY...',64,H/2-20);
-    else splash('GO!!',96,H/2-20,-.05,'#ffd166');
+    const num=timer>70?'3':timer>40?'2':timer>15?'1':'GO!!';
+    const col=timer>70?'#ef3e4a':timer>40?'#ffd23f':timer>15?'#35a44a':'#ffd166';
+    const band=timer>70?(timer-70)/40:timer>40?(timer-40)/30:timer>15?(timer-15)/25:timer/15;
+    const pop=1+Math.max(0,band-.72)*2.4;
+    cx.save();cx.translate(W/2,H/2-20);cx.scale(pop,pop);cx.translate(-W/2,-(H/2-20));
+    splash(num,num==='GO!!'?96:120,H/2-20,-.03,col);
+    cx.restore();
+    if(timer>15)label('AIM IS AUTOMATIC · GET CLOSE AND HOLD FIRE',W/2,H/2+64,13,'#fff');
   }else{
     panel(W/2-130,8,260,26,null,9);
     const goal=mode==='campaign'?'ONE KO WINS':'FIRST TO '+WIN_SCORE;
