@@ -14,38 +14,51 @@ server that pairs two players by room code).
 
 ## Step 1 - push this folder to GitHub
 
-Already a git repo with one commit. Create the remote and push:
+Already a git repo. Create the remote and push:
 
 ```bash
 cd ~/tank-smashdown
 gh repo create tank-smashdown --public --source=. --push
 ```
 
-## Step 2 - deploy the relay on Render
+## Step 2 - the relay on Render, at relay.karhutrades.com
 
-1. render.com, sign in with GitHub, **New > Blueprint**.
-2. Pick the `tank-smashdown` repo. It reads `render.yaml` and proposes a free web service
-   called `tank-smashdown-relay`. Apply.
-3. Wait for the first deploy, then open `https://<your-service>.onrender.com/health`.
-   You want `{"ok":true,...}`.
+1. render.com, sign in with GitHub, **New > Blueprint**, pick the `tank-smashdown` repo.
+   It reads `render.yaml` and creates a free web service. Apply and wait for the deploy.
+2. Check `https://<service>.onrender.com/health` returns `{"ok":true,...}`.
+3. In the service: **Settings > Custom Domains > Add**, enter `relay.karhutrades.com`.
+   Render shows a CNAME target like `tank-smashdown-relay.onrender.com`.
+4. In Cloudflare DNS for karhutrades.com, add:
 
-Your relay URL for the game is that same host with `wss://`:
-`wss://tank-smashdown-relay.onrender.com`
+   | Type | Name | Target | Proxy |
+   | --- | --- | --- | --- |
+   | CNAME | `relay` | `<your-service>.onrender.com` | **DNS only** (grey cloud) |
 
-**If Render gives the service a different name** (the name has to be unique across Render, so
-it may add a suffix), either edit `DEFAULT_RELAY` near the top of the `<script>` in the HTML
-and re-push, or just press `R` in the game's Online screen and type the URL once - it is saved
-per browser.
+   Grey cloud matters: it lets Render issue its own certificate. Cloudflare's proxy does
+   support WebSockets, but leaving it off keeps this simple.
 
-## Step 3 - host the page
+The game already defaults to `wss://relay.karhutrades.com`, so once that resolves nobody
+has to type a URL. Until then, press `R` in the Online screen and paste the raw
+`wss://<service>.onrender.com` address.
 
-Any static host. Free options:
+## Step 3 - the page
 
-- **GitHub Pages**: repo Settings > Pages > deploy from `main`, root. Serves `index.html`.
-- **Cloudflare Pages / Netlify**: connect the repo, no build command, output directory `/`.
+DNS is on Cloudflare, so Cloudflare Pages is the least friction: **Workers & Pages > Create >
+Pages > Connect to Git**, pick the repo, no build command, output directory `/`. Then
+**Custom domains > Set up a domain** and Cloudflare writes the DNS record itself.
 
-The page is served over `https://`, which is exactly why the relay URL must be `wss://`
-(a secure page cannot open an insecure socket). Render gives you TLS automatically.
+Two choices for the address:
+
+**A. The root, `karhutrades.com`** - the nicer URL. In Cloudflare DNS, delete the existing
+`A` record pointing at `132.145.75.51` and attach the apex to the Pages project instead
+(CNAME flattening handles the apex for you). Note this takes over the domain that currently
+serves Snipzy from the Oracle box. Snipzy itself keeps running there untouched; it just
+loses this hostname, and one CNAME would give it `snipzy.karhutrades.com` later if wanted.
+
+**B. `tanks.karhutrades.com`** - leaves the root exactly as it is. Add the subdomain in the
+Pages project and Cloudflare creates the record.
+
+Either way the page ends up on `https://`, which is why the relay must be `wss://`.
 
 ## Step 4 - play
 
@@ -55,8 +68,7 @@ The page is served over `https://`, which is exactly why the relay URL must be `
 4. Both land on tank select. Lock in and the match starts.
 
 Online, either WASD or the arrow keys drives your tank, since you each have your own keyboard.
-
-You can also share a link with the relay baked in: `...?relay=wss://your-service.onrender.com`.
+You can also share a link with a relay override baked in: `...?relay=wss://other-host`.
 
 ## About the free tier
 

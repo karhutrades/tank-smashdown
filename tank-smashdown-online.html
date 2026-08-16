@@ -458,7 +458,7 @@ const MODES=[
   {id:'duel',    title:'SINGLEPLAYER',sub:'QUICK DUEL VS BOT',hint:'ONE HUMAN · PICK A DIFFICULTY'},
   {id:'campaign',title:'CAMPAIGN',    sub:'16 STAGES, RISING DIFFICULTY',hint:'BEAT EVERY ARENA TO UNLOCK TANKS'},
   {id:'coop',    title:'CO-OP 1V1',   sub:'TWO PLAYERS, ONE KEYBOARD',hint:'WASD VS ARROW KEYS'},
-  {id:'online',  title:'ONLINE',      sub:'PLAY OVER THE INTERNET',hint:'ROOM CODE · RENDER RELAY'},
+  {id:'online',  title:'ONLINE',      sub:'PLAY OVER THE INTERNET',hint:'ROOM CODE · RELAY.KARHUTRADES.COM'},
   {id:'profiles',title:'PROFILES',    sub:'NAMES, COLOURS, STATS, UNLOCKS',hint:'SAVED IN THIS BROWSER'},
 ];
 const bg=document.createElement('canvas');bg.width=W;bg.height=H;const bgx=bg.getContext('2d');
@@ -1972,7 +1972,7 @@ requestAnimationFrame(loop);
 const RKEY='tanksmash_relay_v1';
 /* Set this to your own Render service and players never have to type a URL.
    Order of preference: ?relay= in the link > saved value > this default. */
-const DEFAULT_RELAY='wss://tank-smashdown-relay.onrender.com';
+const DEFAULT_RELAY='wss://relay.karhutrades.com';
 const NET={
   ws:null,role:null,code:'',status:'IDLE',msg:'',
   relay:'',editing:false,field:0,
