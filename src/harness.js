@@ -49,7 +49,8 @@ function boot(opts = {}) {
     get toast(){return toast}, aim:(t,a)=>{t.ang=a},
     connect:(r,c)=>netConnect(r,c), setRelay:u=>{NET.relay=u},
     netKey:e=>{if(typeof netKey==='function')netKey(e)},
-    get cells(){return cells}, enemyOf:t=>enemyOf(t), aiInput:t=>aiInput(t), dirBlocked:(t,x,y)=>dirBlocked(t,x,y), T:40
+    get cells(){return cells}, enemyOf:t=>enemyOf(t),
+    hitCellAt:(x,y,r,dx,dy)=>hitCell(x,y,r,'tank',dx,dy,false), moverAt:(x,y,r)=>moverHit(x,y,r), aiInput:t=>aiInput(t), dirBlocked:(t,x,y)=>dirBlocked(t,x,y), T:40
   };`;
   (0, eval)(js + '\n' + BRIDGE);
   const G = globalThis.__t;

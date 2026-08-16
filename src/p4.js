@@ -11,6 +11,21 @@ function campaignStage(i){
   return{map:i%MAPS.length,cls:(i*5+2)%CLASSES.length,
     ai:i<5?0:i<11?1:2,bonus:Math.floor(i/4)};
 }
+/* every field a tank needs before it can move or shoot. Tanks spawned mid-round
+   (waves, minions, the boss) go through here too, otherwise velocities are
+   undefined and the whole movement chain turns into NaN. */
+function resetTankState(t){
+  t.hp=t.maxHp;t.cd=0;t.inv=0;t.recoil=0;
+  t.ivx=0;t.ivy=0;t.mvx=0;t.mvy=0;t.dist=0;t.squash=0;
+  t.tpCd=0;t.crushCd=0;t.starCd=0;t.shield=0;t.minesToLay=0;t.mineCd=0;
+  t.wedge=0;t.lock=0;t.charge=0;t.spin=0;t.shots=0;t.fireHeld=false;
+  t.dead=false;t.respawn=0;t.lastRoll=null;t.plateA=1;
+  t.fx={rapid:0,triple:0,big:0,pierce:0,star:0,speed:0,ghost:0,frozen:0,reverse:0};
+  if(t.ai){t.aiTick=0;t.aiFireLock=0;t.aiPath=null;t.aiPanic=0;t.aiPanicDir=[1,0];
+    t.aiLastX=t.x;t.aiLastY=t.y;t.aimNoise=0}
+  if(t.tang==null)t.tang=t.ang;
+  return t;
+}
 function startRound(){
   const m=MAPS[mapIndex];
   cells=m.grid.map(r=>r.split(''));
@@ -25,13 +40,11 @@ function startRound(){
   bullets=[];mines=[];pickups=[];floats=[];marks=[];conf=[];rings=[];burns=[];
   shake=0;hitstop=0;pickupClock=200;readyPinged=false;goPinged=false;
   initAmbient(m);
-  tanks.forEach((t,i)=>{const s=m.spawns[i];
-    t.x=s[0]*T+T/2;t.y=s[1]*T+T/2;t.ang=s[2];t.tang=s[2];t.hp=t.maxHp;
-    t.cd=0;t.inv=0;t.recoil=0;t.ivx=0;t.ivy=0;t.mvx=0;t.mvy=0;t.dist=0;
-    t.tpCd=0;t.crushCd=0;t.starCd=0;t.shield=0;t.minesToLay=0;t.mineCd=0;
-    t.fx={rapid:0,triple:0,big:0,pierce:0,star:0,speed:0,ghost:0,frozen:0,reverse:0};
-    t.wedge=0;t.lock=0;t.roul=null;t.charge=0;t.spin=0;t.shots=0;t.fireHeld=false;t.lastRoll=null;
-    if(t.ai){t.aiTick=0;t.aiFireLock=0;t.aiPath=null;t.aiPanic=0;t.aiPanicDir=[1,0];t.aiLastX=t.x;t.aiLastY=t.y;t.aimNoise=0}
+  tanks.forEach((t,i)=>{
+    const s=m.spawns[i%m.spawns.length];
+    t.x=s[0]*T+T/2;t.y=s[1]*T+T/2;t.ang=s[2];t.tang=s[2];
+    t.roul=null;
+    resetTankState(t);
   });
   roundClock=ROUND_TIME;sudden=false;
   state='ready';timer=110;
@@ -263,15 +276,47 @@ function aiInput(t){
   }
   if(t.aiTick%cfg.react===0)t.aimNoise=(Math.random()-.5)*cfg.aimErr*2;
   aim+=t.aimNoise||0;
-  // steering target
-  let tx=e.x,ty=e.y;
+  // steering target: the mode objective outranks the duel instinct
+  let tx=e.x,ty=e.y,onJob=false;
+  const kind=kindOf();
+  if(kind==='zone'&&zone){
+    const dz=Math.hypot(t.x-zone.x,t.y-zone.y);
+    const theirs=zone.owner!==null&&zone.owner!==undefined&&zone.owner>=0&&zone.owner!==t.team;
+    // sit in the ring; only drift out to the rim, and rush back if they are capping
+    if(dz>zone.r*(theirs?0.35:0.62)){tx=zone.x;ty=zone.y;onJob=true}
+  }else if(kind==='ball'&&ball){
+    // line up behind the ball relative to the goal you are attacking, then shove
+    const gx=t.team===0?W-GOAL_D*.6:GOAL_D*.6,gy=H/2;
+    const ang=Math.atan2(ball.y-gy,ball.x-gx);
+    const stand=ball.r+t.cls.radius+4;
+    const px=ball.x+Math.cos(ang)*stand,py=ball.y+Math.sin(ang)*stand;
+    const behind=Math.hypot(t.x-px,t.y-py);
+    if(behind<26){tx=ball.x+Math.cos(ang)*-40;ty=ball.y+Math.sin(ang)*-40} // drive through it
+    else{tx=px;ty=py}
+    onJob=true;
+    // defend: if the ball is loose near your own net, get goal-side of it first
+    const ownX=t.team===0?GOAL_D:W-GOAL_D;
+    if(Math.abs(ball.x-ownX)<250&&Math.abs(ball.y-H/2)<190){
+      const dang=Math.atan2(ball.y-H/2,ball.x-ownX);
+      tx=ball.x+Math.cos(dang)*-stand;ty=ball.y+Math.sin(dang)*-stand;
+    }
+  }else if(kind==='survival'&&t.side===1){
+    // only fan out when there is a pack; a lone bot goes straight for the kill
+    const pack=tanks.filter(o=>o.side===1&&!o.dead&&o.hp>0).length;
+    if(pack>1&&dist>150){
+      const idx=tanks.indexOf(t),spread=((idx%4)-1.5)*.38;
+      const a2=Math.atan2(t.y-e.y,t.x-e.x)+spread;
+      tx=e.x+Math.cos(a2)*55;ty=e.y+Math.sin(a2)*55;
+    }
+  }
   if(cfg.seek){
-    let best=null,bd=260;
+    // powerups are a detour, not the plan, once there is a job to do
+    let best=null,bd=onJob?130:260;
     for(const p of pickups){const d=Math.hypot(p.x-t.x,p.y-t.y);if(d<bd){bd=d;best=p}}
-    if(best){tx=best.x;ty=best.y}
+    if(best){tx=best.x;ty=best.y;onJob=false}
   }
   const ideal=g.range*.55;
-  const targetIsEnemy=(tx===e.x&&ty===e.y);
+  const targetIsEnemy=(tx===e.x&&ty===e.y)&&!onJob;
   let wantX=tx-t.x,wantY=ty-t.y;
   const openShot=targetIsEnemy&&los&&dist<g.range*.95;
   if(openShot){
@@ -328,8 +373,20 @@ function aiInput(t){
   t.tang=lerpAngle(t.tang==null?t.ang:t.tang,aim,cfg.react<=3?.28:.16);
   let err=aim-t.tang;
   while(err>Math.PI)err-=2*Math.PI;while(err<-Math.PI)err+=2*Math.PI;
-  const canSee=g.air?dist<g.range:los;
+  let canSee=g.air?dist<g.range:los;
   if(t.aiFireLock>0)t.aiFireLock--;
+  if(kind==='ball'&&ball){
+    // aim at the ball when a shot would push it goalwards
+    const gx=t.team===0?W-GOAL_D*.6:GOAL_D*.6;
+    const toBall=Math.atan2(ball.y-t.y,ball.x-t.x);
+    const ballToGoal=Math.atan2(H/2-ball.y,gx-ball.x);
+    let da=toBall-ballToGoal;
+    while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;
+    if(Math.abs(da)<.7&&losClear(t.x,t.y,ball.x,ball.y)){
+      aim=toBall;t.tang=lerpAngle(t.tang==null?t.ang:t.tang,aim,.25);
+      canSee=true;err=0;
+    }
+  }
   if(canSee&&Math.abs(err)<cfg.aimTol&&dist<g.range&&t.aiFireLock<=0){
     inp.fire=true;
     if(cfg.fireGap)t.aiFireLock=cfg.fireGap;

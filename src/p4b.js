@@ -29,9 +29,9 @@ function respawnPoint(t){
 }
 function reviveTank(t){
   const p=respawnPoint(t);
-  t.x=p.x;t.y=p.y;t.hp=t.maxHp;t.dead=false;t.respawn=0;t.inv=70;
-  t.ivx=t.ivy=t.mvx=t.mvy=0;t.charge=0;t.spin=0;
-  t.fx={rapid:0,triple:0,big:0,pierce:0,star:0,speed:0,ghost:0,frozen:0,reverse:0};
+  t.x=p.x;t.y=p.y;
+  resetTankState(t);
+  t.inv=70;
   ring(t.x,t.y,t.teamColor||'#fff',7,5);burst(t.x,t.y,t.teamColor||'#fff',14,4);
 }
 function announce(txt,color,life){ann={txt,color:color||'#ffd166',life:life||110,t0:life||110}}
@@ -95,9 +95,7 @@ function spawnWave(){
     e.side=1;e.tag='CPU';e.teamColor='#ef3e4a';e.bounty=100+wave*10;
     const p=farSpawn();
     e.x=p.x;e.y=p.y;e.ang=Math.random()*6.28;e.tang=e.ang;
-    e.hp=e.maxHp;e.fx={rapid:0,triple:0,big:0,pierce:0,star:0,speed:0,ghost:0,frozen:0,reverse:0};
-    e.aiTick=0;e.aiFireLock=0;e.aiPath=null;e.aiPanic=0;e.aiPanicDir=[1,0];e.aiLastX=e.x;e.aiLastY=e.y;
-    e.wedge=0;e.lock=0;e.spin=0;e.shots=0;e.charge=0;
+    resetTankState(e);
     tanks.push(e);
     ring(e.x,e.y,'#ef3e4a',6,4);
   }
@@ -257,9 +255,8 @@ function spawnBoss(){
   b.cls=BOSS_CLASS;b.side=1;b.boss=true;b.tag='BOSS';b.name='OMEGA';
   b.maxHp=BOSS_CLASS.hp+bossRound*10;b.hp=b.maxHp;b.mass=6;b.bounty=1000;
   b.teamColor='#ef3e4a';b.x=W-140;b.y=H/2;b.ang=Math.PI;b.tang=Math.PI;
-  b.fx={rapid:0,triple:0,big:0,pierce:0,star:0,speed:0,ghost:0,frozen:0,reverse:0};
-  b.aiTick=0;b.aiFireLock=0;b.aiPath=null;b.aiPanic=0;b.aiPanicDir=[1,0];b.aiLastX=b.x;b.aiLastY=b.y;
-  b.wedge=0;b.lock=0;b.phase=1;b.atk=0;
+  resetTankState(b);
+  b.phase=1;b.atk=0;
   tanks.push(b);
   announce('OMEGA APPROACHES','#ef3e4a',150);
   sBoom();shake=18;
@@ -307,10 +304,8 @@ function spawnMinion(){
   const ci=[0,1,8][Math.random()*3|0];
   const e=makeTank(1,ci,false,AI_LEVELS[1],0,'#b5564a');
   e.side=1;e.tag='CPU';e.bounty=150;e.teamColor='#ef3e4a';
-  const p=farSpawn();e.x=p.x;e.y=p.y;e.hp=e.maxHp;
-  e.fx={rapid:0,triple:0,big:0,pierce:0,star:0,speed:0,ghost:0,frozen:0,reverse:0};
-  e.aiTick=0;e.aiFireLock=0;e.aiPath=null;e.aiPanic=0;e.aiPanicDir=[1,0];e.aiLastX=e.x;e.aiLastY=e.y;
-  e.wedge=0;e.lock=0;e.spin=0;e.shots=0;e.charge=0;e.tang=e.ang=0;
+  const p=farSpawn();e.x=p.x;e.y=p.y;e.ang=e.tang=0;
+  resetTankState(e);
   tanks.push(e);ring(e.x,e.y,'#ef3e4a',6,4);
 }
 
