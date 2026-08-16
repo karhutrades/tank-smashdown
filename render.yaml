@@ -1,0 +1,11 @@
+# Render Blueprint: creates the relay as a free web service.
+# New > Blueprint in the Render dashboard, point it at this repo, deploy.
+services:
+  - type: web
+    name: tank-smashdown-relay
+    runtime: node
+    plan: free
+    buildCommand: ""          # zero dependencies, nothing to build
+    startCommand: node relay-server.js
+    healthCheckPath: /health
+    autoDeploy: true
