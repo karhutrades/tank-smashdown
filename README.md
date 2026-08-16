@@ -1,83 +1,94 @@
-# Tank Smashdown - self-hosted build
+# Tank Smashdown - online build
 
-Everything here is the same game as the Claude artifact, plus working **online multiplayer**.
-Online needs two things: the page hosted somewhere, and a small relay server both players connect to.
+Same game as the Claude artifact plus working online multiplayer. Set up for **Render's free tier**.
 
-## Files
+Two pieces: the **page** (static, host anywhere free) and the **relay** (a tiny always-listening
+server that pairs two players by room code).
 
 | File | What it is |
 | --- | --- |
-| `tank-smashdown-online.html` | The whole game in one file (portrait image embedded). Nothing to build. |
-| `relay-server.js` | Room-code relay. Plain Node, zero dependencies, no `npm install`. |
+| `index.html` / `tank-smashdown-online.html` | The whole game in one file. Identical copies, `index.html` is the one static hosts serve by default. |
+| `relay-server.js` | The relay. Plain Node, zero dependencies, no `npm install`. |
+| `render.yaml` | Render Blueprint so the relay deploys with no manual config. |
+| `package.json` | Start command for hosts that look for one. |
 
-## 1. Run the relay
+## Step 1 - push this folder to GitHub
+
+Already a git repo with one commit. Create the remote and push:
 
 ```bash
-node relay-server.js            # listens on :8787
-PORT=3000 node relay-server.js  # or whatever port your host assigns
+cd ~/tank-smashdown
+gh repo create tank-smashdown --public --source=. --push
 ```
 
-Check it: `curl http://localhost:8787/health` returns `{"ok":true,...}`.
+## Step 2 - deploy the relay on Render
 
-It pairs the two players in a room code and forwards messages between them. It never
-reads the game data, holds no state beyond "who is in which room", and needs no database.
+1. render.com, sign in with GitHub, **New > Blueprint**.
+2. Pick the `tank-smashdown` repo. It reads `render.yaml` and proposes a free web service
+   called `tank-smashdown-relay`. Apply.
+3. Wait for the first deploy, then open `https://<your-service>.onrender.com/health`.
+   You want `{"ok":true,...}`.
 
-### Free places to run it
+Your relay URL for the game is that same host with `wss://`:
+`wss://tank-smashdown-relay.onrender.com`
 
-- **Render / Railway / Fly.io free tier** - point them at this repo, start command `node relay-server.js`.
-  They give you HTTPS, so the game connects with `wss://your-app.onrender.com`.
-- **Any box you already have** - run it behind Caddy for TLS:
-  ```
-  tanks.example.com {
-      reverse_proxy localhost:8787
-  }
-  ```
-- **Same machine / same LAN** - just `node relay-server.js` and use `ws://<your-ip>:8787`.
+**If Render gives the service a different name** (the name has to be unique across Render, so
+it may add a suffix), either edit `DEFAULT_RELAY` near the top of the `<script>` in the HTML
+and re-push, or just press `R` in the game's Online screen and type the URL once - it is saved
+per browser.
 
-Free tiers sleep when idle, so the first connection after a quiet spell can take a few
-seconds to wake. That is the free-tier trade, not a bug in the game.
+## Step 3 - host the page
 
-## 2. Host the page
+Any static host. Free options:
 
-Any static host works, no build step, no server code:
+- **GitHub Pages**: repo Settings > Pages > deploy from `main`, root. Serves `index.html`.
+- **Cloudflare Pages / Netlify**: connect the repo, no build command, output directory `/`.
 
-- **GitHub Pages** - push `tank-smashdown-online.html` (rename to `index.html`), enable Pages.
-- **Cloudflare Pages / Netlify** - drag the file into the dashboard.
-- **Your own box** - serve the file with anything.
+The page is served over `https://`, which is exactly why the relay URL must be `wss://`
+(a secure page cannot open an insecure socket). Render gives you TLS automatically.
 
-**TLS rule:** a page served over `https://` can only open `wss://` sockets. If you host the
-page on HTTPS, the relay must have TLS too. Plain `http://` pages can use `ws://` freely,
-which is why local testing works with no certificates.
-
-## 3. Play
+## Step 4 - play
 
 1. Both players open the page, press start, choose **ONLINE**.
-2. Press `R`, type the relay URL (e.g. `wss://tanks.example.com`), press Enter. Saved for next time.
-3. One player presses `H` to host and reads out the 4-letter room code.
-4. The other presses `C`, types that code, presses Enter, then presses `J` to join.
-5. You both land on the tank select. Lock in, and the host's machine runs the match.
+2. One presses `H` to host and reads out the 4-letter code.
+3. The other presses `C`, types the code, Enter, then `J` to join.
+4. Both land on tank select. Lock in and the match starts.
 
-Online, **either WASD or the arrow keys** drives your tank, since you each have your own keyboard.
+Online, either WASD or the arrow keys drives your tank, since you each have your own keyboard.
+
+You can also share a link with the relay baked in: `...?relay=wss://your-service.onrender.com`.
+
+## About the free tier
+
+Render's free services sleep after about 15 minutes of no traffic, and take roughly 30-60
+seconds to wake. The game handles this: it pings `/health` first and shows a **WAKING** screen
+with a running timer rather than failing. While a match is live the client sends a heartbeat
+every 20 seconds so the instance stays awake. Free tiers change terms, so check the current
+limits before you rely on it.
 
 ## How the netcode works
 
 Host-authoritative. The host simulates the match and broadcasts a state snapshot 20 times a
-second; the guest sends only its input and renders what it is told. That means no desync,
-and the guest feels one round-trip of input lag - fine on the same continent, noticeable
-across an ocean. Verified working with two clients against the relay; it has not yet been
-played over a real internet link, so treat online as beta.
+second; the guest sends only its input and renders what it is told. No desync possible, and
+the guest feels one network round-trip of input lag: fine domestically, noticeable across an
+ocean. The relay never inspects game data, it only forwards bytes between two sockets in a room.
 
-## Local test in one terminal
+Tested: two clients through the relay complete a handshake, pick tanks, start the same match,
+and the guest's input moves its tank on the host. Cold start tested too, clients waiting on a
+relay that boots seven seconds late connect and play normally. Not yet played over a real
+internet link, so treat online as beta.
+
+## Local testing, no deploy
 
 ```bash
-node relay-server.js &
-python3 -m http.server 8000     # then open http://localhost:8000/tank-smashdown-online.html
+node relay-server.js &          # :8787
+python3 -m http.server 8000     # http://localhost:8000/index.html
 ```
 
-Open it in two browser windows, relay `ws://localhost:8787`, host in one and join in the other.
+Open two browser windows. On `localhost` the game defaults to `ws://localhost:8787` already,
+so just host in one window and join from the other.
 
 ## Everything else
 
-Singleplayer, campaign and co-op 1v1 all work with no server at all - open the HTML file
-directly. Profiles, stats and unlocks are stored in each browser's local storage, so they
-are per-device and never leave the machine.
+Singleplayer, campaign and co-op 1v1 need no server at all: open the HTML file directly.
+Profiles, stats and unlocks live in each browser's local storage, so they are per-device.
